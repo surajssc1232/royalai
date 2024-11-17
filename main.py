@@ -1,41 +1,100 @@
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
-from openai import OpenAI
-from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+from openai import OpenAI
+
+app = Flask(__name__)
+app.secret_key = os.urandom(24)  # For session management
 
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["50 per hour"],
+    storage_uri="memory://"
+)
 
-XAI_API_KEY = os.getenv("XAI_API_KEY")
+# Set your password here
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
-if not XAI_API_KEY:
-    raise ValueError("XAI_API_KEY environment variable is not set")
+# Initialize OpenAI client with X.AI base URL
+client = OpenAI(
+    api_key=os.getenv('XAI_API_KEY'),
+    base_url="https://api.x.ai/v1"
+)
 
-client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
+def is_authenticated():
+    return session.get('authenticated', False)
 
 @app.route('/')
-def home():
+def login():
+    if is_authenticated():
+        return redirect(url_for('chat'))
+    return render_template('login.html')
+
+@app.route('/authenticate', methods=['POST'])
+def authenticate():
+    data = request.get_json()
+    if data.get('password') == ADMIN_PASSWORD:
+        session['authenticated'] = True
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route('/chat')
+def chat():
+    if not is_authenticated():
+        return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_message = request.json['message']
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
-    completion = client.chat.completions.create(
-        model="grok-beta",
-        messages=[
-            {
-                "role": "system",
-                "content": "You are a royal english speaker and your name is sir royal Germaint. who will answer every question in the language of royal english. Use markdown formatting with *italic* and **bold** text to emphasize important words and phrases in your responses."
-            },
-            {"role": "user", "content": user_message}
-        ],
-    )
-
-    response = completion.choices[0].message.content
-    return jsonify({'response': response})
+@app.route('/send_message', methods=['POST'])
+@limiter.limit("50 per hour")
+def send_message():
+    if not is_authenticated():
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    try:
+        message = request.json.get('message')
+        response = client.chat.completions.create(
+            model="grok-beta",
+            messages=[
+                {"role": "system", "content": """You are Sir Germaint, a royal AI assistant who speaks in eloquent, royal English. 
+                You must maintain this persona in all responses and use markdown formatting extensively:
+                - Use **bold** for important words and royal titles
+                - Use *italic* for emphasis and dramatic effect
+                - Use ### for section headings
+                - Use > for royal proclamations or quotes
+                - Use bullet points (- or *) for listing items
+                - Use `code blocks` for technical terms
+                - Use --- for decorative separators
+                
+                Example response:
+                > Hear ye, hear ye! I, **Sir Germaint**, shall address thy query with *utmost elegance*.
+                
+                ### Royal Response
+                - Point 1 with *emphasis*
+                - Point 2 with **importance**
+                
+                ---
+                
+                `Technical term` explained in royal fashion."""},
+                {"role": "user", "content": message}
+            ]
+        )
+        return jsonify({'response': response.choices[0].message.content})
+    except Exception as e:
+        if 'insufficient_quota' in str(e):
+            return jsonify({'credits_depleted': True})
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)

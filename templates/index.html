@@ -47,13 +47,44 @@
             border: 1px solid #deb887;
             font-family: 'Times New Roman', serif;
         }
-        .bot-message em {
-            color: #6b5535;
-            font-style: italic;
+        /* Enhanced markdown styling */
+        .bot-message h3 {
+            color: #4a3c28;
+            border-bottom: 1px solid #8b7355;
+            padding-bottom: 5px;
+            margin-top: 10px;
         }
         .bot-message strong {
-            color: #4a3c28;
-            font-weight: bold;
+            color: #6b5535;
+        }
+        .bot-message em {
+            color: #8b7355;
+        }
+        .bot-message blockquote {
+            border-left: 3px solid #8b7355;
+            margin: 10px 0;
+            padding: 10px 20px;
+            background-color: #fdf5e6;
+            font-style: italic;
+        }
+        .bot-message code {
+            background-color: #f5e6d3;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #6b5535;
+        }
+        .bot-message hr {
+            border: none;
+            border-top: 1px solid #deb887;
+            margin: 15px 0;
+        }
+        .bot-message ul, .bot-message ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .bot-message li {
+            margin: 5px 0;
         }
         #input-container {
             display: flex;
@@ -88,159 +119,173 @@
             background-color: #cccccc;
             cursor: not-allowed;
         }
-        h1 {
-            text-align: center;
-            color: #4a3c28;
-            font-family: 'Times New Roman', serif;
-            border-bottom: 2px solid #8b7355;
-            padding-bottom: 10px;
+
+        /* Royal Loading Animation */
+        .loading-container {
+            display: none;
+            text-align: left;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #fff3e0;
+            border: 1px solid #deb887;
+            border-radius: 5px;
+            width: auto;
+            max-width: 250px;
         }
-        .cursor {
+        .crown-loader {
             display: inline-block;
-            width: 2px;
-            height: 1em;
-            background-color: #000;
-            animation: blink 1s infinite;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            background: linear-gradient(45deg, #ffd700, #daa520);
+            clip-path: polygon(50% 0%, 80% 30%, 100% 30%, 100% 70%, 80% 70%, 50% 100%, 20% 70%, 0% 70%, 0% 30%, 20% 30%);
+            animation: crownSpin 2s infinite;
             vertical-align: middle;
-            margin-left: 2px;
         }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+        .loading-text {
+            color: #8b7355;
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 0.9em;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        @keyframes crownSpin {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-dots {
+            display: inline-block;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4) infinite;
         }
     </style>
 </head>
 <body>
-    <h1>🎭 Talk to Sir Germaint 👑</h1>
     <div id="chat-container"></div>
     <div id="input-container">
         <input type="text" id="user-input" placeholder="Address thy query to the Royal AI...">
         <button onclick="sendMessage()" id="sendButton">Send</button>
-        <button onclick="stopTyping()" id="stopButton" style="display: none;">Stop</button>
+        <button onclick="logout()" id="logoutButton">Logout</button>
     </div>
 
     <script>
-        // Initialize showdown converter
-        const converter = new showdown.Converter();
-        converter.setOption('simpleLineBreaks', true);
-        
-        // Global variable to control typing
-        let isTyping = false;
+        // Initialize showdown converter with all features enabled
+        const converter = new showdown.Converter({
+            tables: true,
+            tasklists: true,
+            strikethrough: true,
+            simplifiedAutoLink: true,
+            parseImgDimensions: true,
+            simpleLineBreaks: true
+        });
 
-        async function typeWriter(element, text, speed = 30) {
-            let i = 0;
-            isTyping = true;
-            element.innerHTML = ''; // Clear existing content
-            const cursor = document.createElement('span');
-            cursor.className = 'cursor';
-            element.appendChild(cursor);
-
-            return new Promise((resolve, reject) => {
-                function type() {
-                    if (!isTyping) {
-                        element.removeChild(cursor);
-                        reject('typing_stopped');
-                        return;
-                    }
-                    if (i < text.length) {
-                        const char = text.charAt(i);
-                        const span = document.createElement('span');
-                        span.textContent = char;
-                        element.insertBefore(span, cursor);
-                        i++;
-                        setTimeout(type, speed);
-                    } else {
-                        element.removeChild(cursor);
-                        isTyping = false;
-                        document.getElementById('stopButton').style.display = 'none';
-                        document.getElementById('sendButton').style.display = 'block';
-                        resolve();
-                    }
-                }
-                type();
-            });
+        function showLoading() {
+            const loadingDiv = document.getElementById('loading-container');
+            if (loadingDiv) {
+                loadingDiv.style.display = 'block';
+            }
+            document.getElementById('sendButton').disabled = true;
+            document.getElementById('user-input').disabled = true;
         }
 
-        function stopTyping() {
-            isTyping = false;
-            document.getElementById('stopButton').style.display = 'none';
-            document.getElementById('sendButton').style.display = 'block';
+        function hideLoading() {
+            const loadingDiv = document.getElementById('loading-container');
+            if (loadingDiv) {
+                loadingDiv.style.display = 'none';
+            }
+            document.getElementById('sendButton').disabled = false;
             document.getElementById('user-input').disabled = false;
+            document.getElementById('user-input').focus();
         }
 
-        async function addMessage(message, isUser) {
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        function addMessage(message, isUser) {
             const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
             
-            chatContainer.appendChild(messageDiv);
-            
-            setTimeout(() => messageDiv.classList.add('show'), 10);
-
             if (isUser) {
                 messageDiv.textContent = message;
             } else {
                 const htmlContent = converter.makeHtml(message);
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = htmlContent;
-                const textContent = tempDiv.textContent;
-
-                document.getElementById('stopButton').style.display = 'block';
-                document.getElementById('sendButton').style.display = 'none';
-
-                try {
-                    await typeWriter(messageDiv, textContent);
-                    messageDiv.innerHTML = htmlContent;
-                } catch (error) {
-                    if (error === 'typing_stopped') {
-                        // If typing was stopped, show the full message immediately
-                        messageDiv.innerHTML = htmlContent;
-                    }
-                }
+                messageDiv.innerHTML = htmlContent;
             }
             
+            chatContainer.appendChild(messageDiv);
+            setTimeout(() => messageDiv.classList.add('show'), 10);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const button = document.querySelector('button');
-            const message = input.value.trim();
-            
-            if (message) {
-                // Disable input and button while processing
-                input.disabled = true;
-                button.disabled = true;
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value.trim();
+            if (message === '') return;
+
+            // Add user message
+            addMessage(message, true);
+            userInput.value = '';
+
+            // Show loading in chat container
+            const chatContainer = document.getElementById('chat-container');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading-container';
+            loadingDiv.id = 'loading-container';
+            loadingDiv.innerHTML = `
+                <div class="crown-loader"></div>
+                <div class="loading-text">
+                    Composing royal response<span class="loading-dots"></span>
+                </div>
+            `;
+            chatContainer.appendChild(loadingDiv);
+            loadingDiv.style.display = 'block';
+
+            // Disable input while processing
+            userInput.disabled = true;
+            document.getElementById('sendButton').disabled = true;
+
+            try {
+                const response = await fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
                 
-                addMessage(message, true);
-                input.value = '';
+                if (response.status === 401) {
+                    window.location.href = '/';
+                    return;
+                }
                 
-                try {
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ message: message })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.credits_depleted) {
-                        addMessage("⚠️ Credits Depleted: Please subscribe to X Premium+ to continue using the service.", false);
-                    } else if (data.error) {
-                        addMessage(`Error: ${data.error}`, false);
-                    } else {
-                        await addMessage(data.response, false);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    addMessage('My sincerest apologies, but there appears to be an error in processing thy message.', false);
-                } finally {
-                    // Re-enable input and button after processing
-                    input.disabled = false;
-                    button.disabled = false;
-                    input.focus();
+                const data = await response.json();
+                
+                if (data.credits_depleted) {
+                    addMessage("⚠️ Credits Depleted: Please subscribe to X Premium+ to continue using the service.", false);
+                } else if (data.error) {
+                    addMessage(`Error: ${data.error}`, false);
+                } else {
+                    addMessage(data.response, false);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('My sincerest apologies, but there appears to be an error in processing thy message.', false);
+            } finally {
+                hideLoading();
+                const loadingDiv = document.getElementById('loading-container');
+                if (loadingDiv) {
+                    loadingDiv.remove();
                 }
             }
         }
