@@ -78,6 +78,12 @@
         button:hover {
             background-color: #6b5535;
         }
+        #stopButton {
+            background-color: #d32f2f;
+        }
+        #stopButton:hover {
+            background-color: #9a0007;
+        }
         button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
@@ -109,23 +115,33 @@
     <div id="chat-container"></div>
     <div id="input-container">
         <input type="text" id="user-input" placeholder="Address thy query to the Royal AI...">
-        <button onclick="sendMessage()">Send</button>
+        <button onclick="sendMessage()" id="sendButton">Send</button>
+        <button onclick="stopTyping()" id="stopButton" style="display: none;">Stop</button>
     </div>
 
     <script>
         // Initialize showdown converter
         const converter = new showdown.Converter();
         converter.setOption('simpleLineBreaks', true);
+        
+        // Global variable to control typing
+        let isTyping = false;
 
         async function typeWriter(element, text, speed = 30) {
             let i = 0;
+            isTyping = true;
             element.innerHTML = ''; // Clear existing content
             const cursor = document.createElement('span');
             cursor.className = 'cursor';
             element.appendChild(cursor);
 
-            return new Promise(resolve => {
+            return new Promise((resolve, reject) => {
                 function type() {
+                    if (!isTyping) {
+                        element.removeChild(cursor);
+                        reject('typing_stopped');
+                        return;
+                    }
                     if (i < text.length) {
                         const char = text.charAt(i);
                         const span = document.createElement('span');
@@ -135,11 +151,21 @@
                         setTimeout(type, speed);
                     } else {
                         element.removeChild(cursor);
+                        isTyping = false;
+                        document.getElementById('stopButton').style.display = 'none';
+                        document.getElementById('sendButton').style.display = 'block';
                         resolve();
                     }
                 }
                 type();
             });
+        }
+
+        function stopTyping() {
+            isTyping = false;
+            document.getElementById('stopButton').style.display = 'none';
+            document.getElementById('sendButton').style.display = 'block';
+            document.getElementById('user-input').disabled = false;
         }
 
         async function addMessage(message, isUser) {
@@ -149,22 +175,28 @@
             
             chatContainer.appendChild(messageDiv);
             
-            // Add show class after a brief delay for animation
             setTimeout(() => messageDiv.classList.add('show'), 10);
 
             if (isUser) {
                 messageDiv.textContent = message;
             } else {
-                // Convert markdown to HTML first
                 const htmlContent = converter.makeHtml(message);
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = htmlContent;
                 const textContent = tempDiv.textContent;
 
-                // Type out the text
-                await typeWriter(messageDiv, textContent);
-                // After typing, replace with formatted HTML
-                messageDiv.innerHTML = htmlContent;
+                document.getElementById('stopButton').style.display = 'block';
+                document.getElementById('sendButton').style.display = 'none';
+
+                try {
+                    await typeWriter(messageDiv, textContent);
+                    messageDiv.innerHTML = htmlContent;
+                } catch (error) {
+                    if (error === 'typing_stopped') {
+                        // If typing was stopped, show the full message immediately
+                        messageDiv.innerHTML = htmlContent;
+                    }
+                }
             }
             
             chatContainer.scrollTop = chatContainer.scrollHeight;
