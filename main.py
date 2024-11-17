@@ -37,5 +37,7 @@ def chat():
     response = completion.choices[0].message.content
     return jsonify({'response': response})
 
+if __name__ == '__main__':
+    app.run(debug=True)
 # Vercel requires application to be named 'app'
-app = app
+# app = app

@@ -25,6 +25,13 @@
             margin-bottom: 10px;
             padding: 10px;
             border-radius: 5px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
         }
         .message p {
             margin: 0;
@@ -71,12 +78,29 @@
         button:hover {
             background-color: #6b5535;
         }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
         h1 {
             text-align: center;
             color: #4a3c28;
             font-family: 'Times New Roman', serif;
             border-bottom: 2px solid #8b7355;
             padding-bottom: 10px;
+        }
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background-color: #000;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
     </style>
 </head>
@@ -93,29 +117,69 @@
         const converter = new showdown.Converter();
         converter.setOption('simpleLineBreaks', true);
 
-        function addMessage(message, isUser) {
+        async function typeWriter(element, text, speed = 30) {
+            let i = 0;
+            element.innerHTML = ''; // Clear existing content
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            element.appendChild(cursor);
+
+            return new Promise(resolve => {
+                function type() {
+                    if (i < text.length) {
+                        const char = text.charAt(i);
+                        const span = document.createElement('span');
+                        span.textContent = char;
+                        element.insertBefore(span, cursor);
+                        i++;
+                        setTimeout(type, speed);
+                    } else {
+                        element.removeChild(cursor);
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function addMessage(message, isUser) {
             const chatContainer = document.getElementById('chat-container');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
             
-            // Parse markdown only for bot messages
+            chatContainer.appendChild(messageDiv);
+            
+            // Add show class after a brief delay for animation
+            setTimeout(() => messageDiv.classList.add('show'), 10);
+
             if (isUser) {
                 messageDiv.textContent = message;
             } else {
-                // Convert markdown to HTML
+                // Convert markdown to HTML first
                 const htmlContent = converter.makeHtml(message);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                const textContent = tempDiv.textContent;
+
+                // Type out the text
+                await typeWriter(messageDiv, textContent);
+                // After typing, replace with formatted HTML
                 messageDiv.innerHTML = htmlContent;
             }
             
-            chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         async function sendMessage() {
             const input = document.getElementById('user-input');
+            const button = document.querySelector('button');
             const message = input.value.trim();
             
             if (message) {
+                // Disable input and button while processing
+                input.disabled = true;
+                button.disabled = true;
+                
                 addMessage(message, true);
                 input.value = '';
                 
@@ -129,17 +193,30 @@
                     });
                     
                     const data = await response.json();
-                    addMessage(data.response, false);
+                    
+                    if (data.credits_depleted) {
+                        addMessage("⚠️ Credits Depleted: Please subscribe to X Premium+ to continue using the service.", false);
+                    } else if (data.error) {
+                        addMessage(`Error: ${data.error}`, false);
+                    } else {
+                        await addMessage(data.response, false);
+                    }
                 } catch (error) {
                     console.error('Error:', error);
                     addMessage('My sincerest apologies, but there appears to be an error in processing thy message.', false);
+                } finally {
+                    // Re-enable input and button after processing
+                    input.disabled = false;
+                    button.disabled = false;
+                    input.focus();
                 }
             }
         }
 
         // Allow Enter key to send message
         document.getElementById('user-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
