@@ -28,10 +28,6 @@ client = OpenAI(
     base_url="https://api.x.ai/v1"
 )
 
-# Special code verification system and request tracking
-SPECIAL_CODE = "ROYALGROK2024"  # You can change this to any code you want
-MAX_FREE_REQUESTS = 5
-
 def is_authenticated():
     return session.get('authenticated', False)
 
@@ -49,14 +45,6 @@ def authenticate():
         return jsonify({'success': True})
     return jsonify({'success': False})
 
-@app.route('/verify_special_code', methods=['POST'])
-def verify_special_code():
-    data = request.get_json()
-    if data and data.get('code') == SPECIAL_CODE:
-        session['unlimited_access'] = True
-        return jsonify({'success': True})
-    return jsonify({'success': False})
-
 @app.route('/chat')
 def chat():
     if not is_authenticated():
@@ -69,23 +57,13 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/send_message', methods=['POST'])
+@limiter.limit("50 per hour")
 def send_message():
-    if not session.get('authenticated'):
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    # Check request count unless user has unlimited access
-    if not session.get('unlimited_access'):
-        request_count = session.get('request_count', 0) + 1
-        session['request_count'] = request_count
+    if not is_authenticated():
+        return jsonify({'error': 'Unauthorized'}), 401
         
-        if request_count > MAX_FREE_REQUESTS:
-            return jsonify({
-                'error': 'Request limit reached',
-                'needs_code': True
-            })
-
     try:
-        data = request.json.get('message')
+        message = request.json.get('message')
         response = client.chat.completions.create(
             model="grok-beta",
             messages=[
@@ -109,7 +87,7 @@ def send_message():
                 ---
                 
                 `Technical term` explained in royal fashion."""},
-                {"role": "user", "content": data}
+                {"role": "user", "content": message}
             ]
         )
         return jsonify({'response': response.choices[0].message.content})
