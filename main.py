@@ -19,6 +19,10 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+api_key=os.getenv('XAI_API_KEY')  # Set your OpenAI API key here
+
+if not api_key:
+    raise ValueError("API key not found. Please set your OpenAI API key in the .env file.")
 # Set your password here
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
@@ -99,5 +103,3 @@ def send_message():
 
 if __name__ == '__main__':
     app.run(debug=True)
-# Vercel requires application to be named 'app'
-# app = app
