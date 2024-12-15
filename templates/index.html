@@ -2,28 +2,46 @@
 <html>
 <head>
     <title>Royal Grok AI Chat</title>
-
-    
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Add showdown library for markdown parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Times New Roman', serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
             background-color: #f8f5e6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
         }
+
+        .chat-wrapper {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         #chat-container {
-            height: 400px;
+            flex-grow: 1;
             border: 2px solid #8b7355;
             overflow-y: auto;
             padding: 20px;
             margin-bottom: 20px;
             background-color: white;
             border-radius: 10px;
+            min-height: 70vh;
+            max-height: 70vh;
         }
+
         .message {
             margin-bottom: 10px;
             padding: 10px;
@@ -31,99 +49,126 @@
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s ease, transform 0.5s ease;
+            word-wrap: break-word;
+            max-width: 100%;
         }
+
         .message.show {
             opacity: 1;
             transform: translateY(0);
         }
+
         .message p {
             margin: 0;
         }
+
         .user-message {
             background-color: #e3f2fd;
-            margin-left: 20%;
+            margin-left: 10%;
+            margin-right: 5%;
             border: 1px solid #b0c4de;
         }
+
         .bot-message {
             background-color: #fff3e0;
-            margin-right: 20%;
+            margin-right: 10%;
+            margin-left: 5%;
             border: 1px solid #deb887;
             font-family: 'Times New Roman', serif;
         }
+
         /* Enhanced markdown styling */
         .bot-message h3 {
             color: #4a3c28;
             border-bottom: 1px solid #8b7355;
             padding-bottom: 5px;
             margin-top: 10px;
+            font-size: 1.2em;
         }
+
         .bot-message strong {
             color: #6b5535;
         }
+
         .bot-message em {
             color: #8b7355;
         }
+
         .bot-message blockquote {
             border-left: 3px solid #8b7355;
             margin: 10px 0;
-            padding: 10px 20px;
+            padding: 10px;
             background-color: #fdf5e6;
             font-style: italic;
         }
+
         .bot-message code {
             background-color: #f5e6d3;
             padding: 2px 4px;
             border-radius: 3px;
             font-family: monospace;
             color: #6b5535;
+            word-break: break-word;
         }
+
         .bot-message hr {
             border: none;
             border-top: 1px solid #deb887;
             margin: 15px 0;
         }
+
         .bot-message ul, .bot-message ol {
             margin: 10px 0;
             padding-left: 20px;
         }
+
         .bot-message li {
             margin: 5px 0;
         }
+
         #input-container {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
+
         #user-input {
-            flex-grow: 1;
-            padding: 10px;
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
             border: 2px solid #8b7355;
             border-radius: 5px;
             font-family: 'Times New Roman', serif;
+            font-size: 16px;
         }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         button {
-            padding: 10px 20px;
+            padding: 12px 20px;
             background-color: #8b7355;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-family: 'Times New Roman', serif;
+            font-size: 16px;
+            white-space: nowrap;
         }
+
         button:hover {
             background-color: #6b5535;
         }
-        #stopButton {
-            background-color: #d32f2f;
-        }
-        #stopButton:hover {
-            background-color: #9a0007;
-        }
+
         button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
         }
 
-        /* Royal Loading Animation */
         .loading-container {
             display: none;
             text-align: left;
@@ -135,6 +180,7 @@
             width: auto;
             max-width: 250px;
         }
+
         .crown-loader {
             display: inline-block;
             width: 20px;
@@ -145,6 +191,13 @@
             animation: crownSpin 2s infinite;
             vertical-align: middle;
         }
+
+        @keyframes crownSpin {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .loading-text {
             color: #8b7355;
             font-family: 'Times New Roman', serif;
@@ -153,33 +206,66 @@
             display: inline-block;
             vertical-align: middle;
         }
-        @keyframes crownSpin {
-            0% { transform: rotate(0deg); }
-            50% { transform: rotate(180deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-dots {
-            display: inline-block;
-        }
+
         @keyframes dots {
             0%, 20% { content: '.'; }
             40% { content: '..'; }
             60%, 100% { content: '...'; }
         }
+
         .loading-dots::after {
             content: '';
             animation: dots 1.5s steps(4) infinite;
         }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            #chat-container {
+                padding: 10px;
+                min-height: 60vh;
+            }
+
+            .user-message {
+                margin-left: 5%;
+                margin-right: 5%;
+            }
+
+            .bot-message {
+                margin-left: 5%;
+                margin-right: 5%;
+            }
+
+            button {
+                flex: 1;
+                min-width: 120px;
+                padding: 10px;
+            }
+
+            #user-input {
+                width: 100%;
+            }
+
+            .button-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="chat-container"></div>
-    <div id="input-container">
-        <input type="text" id="user-input" placeholder="Address thy query to the Royal AI...">
-        <button onclick="sendMessage()" id="sendButton">Send</button>
-        <button onclick="logout()" id="logoutButton">Logout</button>
+    <div class="chat-wrapper">
+        <div id="chat-container"></div>
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Address thy query to the Royal AI...">
+            <div class="button-group">
+                <button onclick="sendMessage()" id="sendButton">Send</button>
+                <button onclick="logout()" id="logoutButton">Logout</button>
+            </div>
+        </div>
     </div>
-
     <script>
         // Initialize showdown converter with all features enabled
         const converter = new showdown.Converter({
