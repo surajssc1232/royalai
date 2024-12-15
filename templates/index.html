@@ -351,10 +351,6 @@
 
         /* Theme Switcher */
         .theme-switch {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -363,6 +359,7 @@
             border-radius: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border: 1px solid #deb887;
+            margin-left: 15px;
         }
 
         .theme-switch label {
@@ -720,6 +717,10 @@
     <div class="chat-wrapper">
         <div class="chat-header">
             <h1><span class="crown">👑</span> Royal Grok AI</h1>
+            <div class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <label for="theme-toggle"></label>
+            </div>
         </div>
         <div id="chat-container"></div>
         <div id="input-container">
@@ -731,10 +732,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    <div class="theme-switch">
-        <input type="checkbox" id="theme-toggle">
-        <label for="theme-toggle"></label>
     </div>
     <script>
         // Initialize showdown converter with all features enabled
