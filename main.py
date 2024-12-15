@@ -4,9 +4,7 @@ from flask_limiter.util import get_remote_address
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-import httpx
 
-# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # For session management
 
@@ -21,17 +19,18 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Get environment variables
-api_key = os.getenv('XAI_API_KEY')
+api_key=os.getenv('XAI_API_KEY')  # Set your OpenAI API key here
+
 if not api_key:
     raise ValueError("API key not found. Please set your OpenAI API key in the .env file.")
+# Set your password here
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
-
-# Initialize OpenAI client
+# Initialize OpenAI client with X.AI base URL
 client = OpenAI(
-    api_key=api_key,
-    base_url="https://api.x.ai/v1"
+    api_key=os.getenv('XAI_API_KEY'),
+    base_url="https://api.x.ai/v1",
+    http_client=None
 )
 
 def is_authenticated():
@@ -102,9 +101,5 @@ def send_message():
             return jsonify({'credits_depleted': True})
         return jsonify({'error': str(e)})
 
-# For local development
 if __name__ == '__main__':
     app.run(debug=True)
-
-# For Vercel serverless deployment
-app = app.wsgi_app
