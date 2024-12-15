@@ -2,69 +2,187 @@
 <html>
 <head>
     <title>Login - Royal Grok AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Times New Roman', serif;
             background-color: #f8f5e6;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
+
         .login-container {
             background-color: white;
             padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(139, 115, 85, 0.2);
             border: 2px solid #8b7355;
             text-align: center;
+            width: 100%;
             max-width: 400px;
-            width: 90%;
         }
+
         h1 {
             color: #4a3c28;
             margin-bottom: 30px;
+            font-size: 2.2em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
-        .input-group {
+
+        .crown-emoji {
+            font-size: 2.5em;
             margin-bottom: 20px;
+            display: block;
         }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
         input {
             width: 100%;
-            padding: 10px;
+            padding: 15px;
             border: 2px solid #8b7355;
-            border-radius: 5px;
+            border-radius: 8px;
             font-family: 'Times New Roman', serif;
-            box-sizing: border-box;
+            font-size: 16px;
+            background-color: #fff;
+            transition: border-color 0.3s ease;
         }
+
+        input:focus {
+            outline: none;
+            border-color: #6b5535;
+            box-shadow: 0 0 5px rgba(107, 85, 53, 0.3);
+        }
+
+        .hint {
+            color: #8b7355;
+            font-style: italic;
+            margin-top: 10px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
         button {
             background-color: #8b7355;
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 5px;
+            padding: 15px 30px;
+            border-radius: 8px;
             cursor: pointer;
             font-family: 'Times New Roman', serif;
             width: 100%;
-            font-size: 16px;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         button:hover {
             background-color: #6b5535;
         }
+
         .error-message {
             color: #d32f2f;
-            margin-top: 10px;
+            margin-top: 15px;
             display: none;
+            font-size: 0.95em;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 25px;
+            }
+
+            .crown-emoji {
+                font-size: 2em;
+            }
+
+            input {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            button {
+                padding: 12px 25px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .login-container {
+                padding: 25px 15px;
+            }
+
+            h1 {
+                font-size: 1.6em;
+                margin-bottom: 20px;
+            }
+
+            .crown-emoji {
+                font-size: 1.8em;
+            }
+
+            .hint {
+                font-size: 0.85em;
+                margin-top: 8px;
+            }
+
+            .error-message {
+                font-size: 0.9em;
+                padding: 8px;
+            }
+        }
+
+        /* Animation for error shake */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1>🎭 Royal Grok AI 👑</h1>
+        <span class="crown-emoji">👑</span>
+        <h1>Royal Grok AI</h1>
         <form id="login-form" onsubmit="return authenticate(event)">
             <div class="input-group">
                 <input type="password" id="password" placeholder="Enter thy secret password..." required>
-                <div style="color: #8b7355; font-style: italic; margin-top: 8px; font-size: 14px;">
+                <div class="hint">
                     Hint: Master Suraj's favorite sci-fi movie 🎬
                 </div>
             </div>
@@ -80,6 +198,7 @@
             event.preventDefault();
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('error-message');
+            const loginForm = document.getElementById('login-form');
             
             try {
                 const response = await fetch('/authenticate', {
@@ -97,6 +216,8 @@
                 } else {
                     errorMessage.style.display = 'block';
                     document.getElementById('password').value = '';
+                    loginForm.classList.add('shake');
+                    setTimeout(() => loginForm.classList.remove('shake'), 600);
                 }
             } catch (error) {
                 console.error('Error:', error);
