@@ -13,6 +13,8 @@ app.permanent_session_lifetime = timedelta(days=7)  # Set session to last for 7 
 @app.before_request
 def make_session_permanent():
     session.permanent = True  # Make the session permanent
+    if not is_authenticated() and request.endpoint not in ['login', 'authenticate', 'static']:
+        return redirect(url_for('login'))
     
 # Load environment variables
 load_dotenv()
@@ -55,9 +57,11 @@ def authenticate():
         data = request.get_json()
         if data and data.get('password') == ADMIN_PASSWORD:
             session['authenticated'] = True
+            session.modified = True  # Ensure session is saved
             return jsonify({'success': True})
         return jsonify({'success': False})
     except Exception as e:
+        app.logger.error(f"Authentication error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/chat')
