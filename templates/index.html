@@ -480,12 +480,6 @@
             border-radius: 15px 15px 0 0;
         }
 
-        .chat-header-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
         .chat-header h1 {
             font-size: 1.5em;
             color: #4a3c28;
@@ -557,45 +551,25 @@
         /* Personality Selector */
         .personality-selector {
             position: fixed;
-            top: 0;
-            left: -280px;
-            height: 100vh;
-            width: 270px;
-            margin: 0;
-            background: rgba(255, 255, 255, 0.95);
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
             padding: 15px;
-            border-right: 1px solid #deb887;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease;
-            z-index: 1001;
-        }
-
-        .personality-selector .theme-container {
-            margin-top: auto;
-            padding-top: 20px;
-            border-top: 1px solid #deb887;
-        }
-
-        .personality-selector.active {
-            transform: translateX(280px);
-        }
-
-        .personality-options-container {
-            flex: 1;
-            overflow-y: auto;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #deb887;
+            max-width: 250px;
         }
 
         .personality-option {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px;
+            padding: 8px;
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.2s;
-            margin-bottom: 8px;
         }
 
         .personality-option:hover {
@@ -626,12 +600,9 @@
         }
 
         [data-theme="dark"] .personality-selector {
-            background: rgba(58, 50, 46, 0.98);
-            border-right-color: #5a4a42;
-        }
-
-        [data-theme="dark"] .personality-selector .theme-container {
-            border-top-color: #5a4a42;
+            background: rgba(58, 50, 46, 0.95);
+            border-color: #deb887;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
         [data-theme="dark"] .personality-option {
@@ -653,14 +624,40 @@
 
         /* Mobile Responsive Design */
         @media (max-width: 768px) {
+            .personality-selector {
+                position: static;
+                margin: 10px auto;
+                width: calc(100% - 20px);
+                max-width: none;
+                background: rgba(255, 255, 255, 0.95);
+            }
+
             .theme-switch {
                 top: auto;
                 bottom: 20px;
                 right: 20px;
             }
+
+            .chat-wrapper {
+                margin-top: 10px;
+            }
         }
 
         @media (max-width: 480px) {
+            .personality-selector {
+                padding: 10px;
+                margin: 5px auto;
+                width: calc(100% - 10px);
+            }
+
+            .personality-option {
+                padding: 6px;
+            }
+
+            .personality-desc {
+                font-size: 0.75em;
+            }
+
             .theme-switch {
                 bottom: 10px;
                 right: 10px;
@@ -687,117 +684,42 @@
         [data-theme="dark"] .personality-selector {
             background: rgba(58, 50, 46, 0.95);
         }
-
-        /* Mobile Menu Button */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-            color: #4a3c28;
-            padding: 5px;
-        }
-
-        /* Theme Switch in Sidebar */
-        .personality-selector .theme-switch {
-            position: static;
-            box-shadow: none;
-            border: none;
-            background: none;
-            padding: 15px 0;
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: block;
-            }
-
-            .theme-switch:not(.personality-selector .theme-switch) {
-                display: none;
-            }
-
-            body {
-                padding: 0;
-            }
-
-            .chat-wrapper {
-                height: 100vh;
-                border-radius: 0;
-            }
-
-            .chat-header {
-                border-radius: 0;
-            }
-
-            #chat-container {
-                padding: 10px;
-            }
-        }
-
-        /* Dark Theme Adjustments */
-        [data-theme="dark"] .personality-selector {
-            background: rgba(58, 50, 46, 0.98);
-            border-right-color: #5a4a42;
-        }
-
-        [data-theme="dark"] .personality-selector .theme-container {
-            border-top-color: #5a4a42;
-        }
-
-        [data-theme="dark"] .mobile-menu-btn {
-            color: #deb887;
-        }
     </style>
 </head>
 <body>
     <div class="personality-selector">
-        <div class="personality-options-container">
-            <div class="personality-option active" data-personality="germaint">
-                <span class="personality-emoji">⚔️</span>
-                <div class="personality-info">
-                    <div class="personality-title">Sir Germaint</div>
-                    <div class="personality-desc">Noble knight of the round table</div>
-                </div>
-            </div>
-            <div class="personality-option" data-personality="wizard">
-                <span class="personality-emoji">🧙‍♂️</span>
-                <div class="personality-info">
-                    <div class="personality-title">Merlin the Wise</div>
-                    <div class="personality-desc">Mysterious court wizard</div>
-                </div>
-            </div>
-            <div class="personality-option" data-personality="queen">
-                <span class="personality-emoji">👑</span>
-                <div class="personality-info">
-                    <div class="personality-title">Queen Eleanor</div>
-                    <div class="personality-desc">Graceful sovereign ruler</div>
-                </div>
-            </div>
-            <div class="personality-option" data-personality="jester">
-                <span class="personality-emoji">🃏</span>
-                <div class="personality-info">
-                    <div class="personality-title">Jasper the Jester</div>
-                    <div class="personality-desc">Witty court entertainer</div>
-                </div>
+        <div class="personality-option active" data-personality="germaint">
+            <span class="personality-emoji">⚔️</span>
+            <div class="personality-info">
+                <div class="personality-title">Sir Germaint</div>
+                <div class="personality-desc">Noble knight of the round table</div>
             </div>
         </div>
-        <div class="theme-container">
-            <div class="theme-switch">
-                <input type="checkbox" id="theme-toggle-sidebar">
-                <label for="theme-toggle-sidebar"></label>
+        <div class="personality-option" data-personality="wizard">
+            <span class="personality-emoji">🧙‍♂️</span>
+            <div class="personality-info">
+                <div class="personality-title">Merlin the Wise</div>
+                <div class="personality-desc">Mysterious court wizard</div>
+            </div>
+        </div>
+        <div class="personality-option" data-personality="queen">
+            <span class="personality-emoji">👑</span>
+            <div class="personality-info">
+                <div class="personality-title">Queen Eleanor</div>
+                <div class="personality-desc">Graceful sovereign ruler</div>
+            </div>
+        </div>
+        <div class="personality-option" data-personality="jester">
+            <span class="personality-emoji">🃏</span>
+            <div class="personality-info">
+                <div class="personality-title">Jasper the Jester</div>
+                <div class="personality-desc">Witty court entertainer</div>
             </div>
         </div>
     </div>
     <div class="chat-wrapper">
         <div class="chat-header">
-            <div class="chat-header-content">
-                <h1><span class="crown">👑</span> Royal Grok AI</h1>
-            </div>
-            <div class="mobile-menu-btn" onclick="togglePersonalitySelector()">☰</div>
+            <h1><span class="crown">👑</span> Royal Grok AI</h1>
         </div>
         <div id="chat-container"></div>
         <div id="input-container">
@@ -810,7 +732,10 @@
             </div>
         </div>
     </div>
-    <div class="sidebar-overlay" onclick="togglePersonalitySelector()"></div>
+    <div class="theme-switch">
+        <input type="checkbox" id="theme-toggle">
+        <label for="theme-toggle"></label>
+    </div>
     <script>
         // Initialize showdown converter with all features enabled
         const converter = new showdown.Converter({
@@ -986,14 +911,14 @@
         });
 
         // Theme Switcher
-        const themeToggleSidebar = document.getElementById('theme-toggle-sidebar');
+        const themeToggle = document.getElementById('theme-toggle');
         
         // Check for saved theme preference
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-theme', savedTheme);
-        themeToggleSidebar.checked = savedTheme === 'dark';
+        themeToggle.checked = savedTheme === 'dark';
 
-        themeToggleSidebar.addEventListener('change', function() {
+        themeToggle.addEventListener('change', function() {
             const theme = this.checked ? 'dark' : 'light';
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
@@ -1011,8 +936,7 @@
 
         // Personality Selection
         document.querySelectorAll('.personality-option').forEach(option => {
-            option.addEventListener('click', async function(e) {
-                e.stopPropagation(); // Prevent event from bubbling up
+            option.addEventListener('click', async function() {
                 const personality = this.dataset.personality;
                 
                 try {
@@ -1036,18 +960,6 @@
                 }
             });
         });
-
-        // Prevent sidebar from closing when clicking inside it
-        document.querySelector('.personality-selector').addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-        function togglePersonalitySelector() {
-            const personalitySelector = document.querySelector('.personality-selector');
-            const sidebarOverlay = document.querySelector('.sidebar-overlay');
-            personalitySelector.classList.toggle('active');
-            sidebarOverlay.classList.toggle('active');
-        }
     </script>
 </body>
 </html>
