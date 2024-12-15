@@ -6,12 +6,12 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # For session management
+app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))  # Use environment variable for secret key
 
 # Load environment variables
 load_dotenv()
 
-# Initialize rate limiter
+# Initialize rate limiter with Redis for distributed environments
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -19,17 +19,19 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-api_key=os.getenv('XAI_API_KEY')  # Set your OpenAI API key here
-
+api_key = os.getenv('XAI_API_KEY')
 if not api_key:
-    raise ValueError("API key not found. Please set your OpenAI API key in the .env file.")
-# Set your password here
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
+    raise ValueError("API key not found. Please set your OpenAI API key in the environment variables.")
+
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+if not ADMIN_PASSWORD:
+    raise ValueError("Admin password not found. Please set ADMIN_PASSWORD in the environment variables.")
 
 # Initialize OpenAI client with X.AI base URL
 client = OpenAI(
     api_key=api_key,
-    base_url="https://api.x.ai/v1"
+    base_url="https://api.x.ai/v1",
+    default_headers={"Content-Type": "application/json"}
 )
 
 def is_authenticated():
@@ -43,11 +45,14 @@ def login():
 
 @app.route('/authenticate', methods=['POST'])
 def authenticate():
-    data = request.get_json()
-    if data.get('password') == ADMIN_PASSWORD:
-        session['authenticated'] = True
-        return jsonify({'success': True})
-    return jsonify({'success': False})
+    try:
+        data = request.get_json()
+        if data and data.get('password') == ADMIN_PASSWORD:
+            session['authenticated'] = True
+            return jsonify({'success': True})
+        return jsonify({'success': False})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/chat')
 def chat():
@@ -68,6 +73,9 @@ def send_message():
         
     try:
         message = request.json.get('message')
+        if not message:
+            return jsonify({'error': 'No message provided'}), 400
+
         response = client.chat.completions.create(
             model="grok-beta",
             messages=[
@@ -98,7 +106,20 @@ def send_message():
     except Exception as e:
         if 'insufficient_quota' in str(e):
             return jsonify({'credits_depleted': True})
-        return jsonify({'error': str(e)})
+        app.logger.error(f"Error in send_message: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Add error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Not Found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal Server Error'}), 500
+
+# Vercel requires the app to be named 'app'
+app.debug = False  # Disable debug mode in production
 
 if __name__ == '__main__':
     app.run(debug=True)
