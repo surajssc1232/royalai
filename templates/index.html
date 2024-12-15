@@ -482,7 +482,35 @@
             
             chatContainer.appendChild(messageDiv);
             setTimeout(() => messageDiv.classList.add('show'), 10);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Smooth scroll to bottom
+            smoothScrollToBottom(chatContainer);
+        }
+
+        // Add new smooth scroll function
+        function smoothScrollToBottom(element) {
+            const start = element.scrollTop;
+            const end = element.scrollHeight - element.clientHeight;
+            const duration = 300; // Duration in milliseconds
+            const startTime = performance.now();
+
+            function scroll(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Easing function for smooth animation
+                const easeProgress = progress < 0.5
+                    ? 2 * progress * progress
+                    : -1 + (4 - 2 * progress) * progress;
+
+                element.scrollTop = start + (end - start) * easeProgress;
+
+                if (progress < 1) {
+                    requestAnimationFrame(scroll);
+                }
+            }
+
+            requestAnimationFrame(scroll);
         }
 
         async function sendMessage() {
@@ -490,12 +518,13 @@
             const message = userInput.value.trim();
             if (message === '') return;
 
+            const chatContainer = document.getElementById('chat-container');
+
             // Add user message
             addMessage(message, true);
             userInput.value = '';
 
             // Show loading animation
-            const chatContainer = document.getElementById('chat-container');
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'loading-container';
             loadingDiv.innerHTML = `
@@ -511,6 +540,7 @@
             `;
             chatContainer.appendChild(loadingDiv);
             loadingDiv.style.display = 'block';
+            smoothScrollToBottom(chatContainer);
 
             // Disable input while processing
             userInput.disabled = true;
@@ -553,6 +583,9 @@
                 userInput.disabled = false;
                 document.getElementById('sendButton').disabled = false;
                 userInput.focus();
+                
+                // Final scroll to bottom after everything is done
+                setTimeout(() => smoothScrollToBottom(chatContainer), 100);
             }
         }
 

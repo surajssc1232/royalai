@@ -4,10 +4,16 @@ from flask_limiter.util import get_remote_address
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))  # Use environment variable for secret key
+app.permanent_session_lifetime = timedelta(days=7)  # Set session to last for 7 days
 
+@app.before_request
+def make_session_permanent():
+    session.permanent = True  # Make the session permanent
+    
 # Load environment variables
 load_dotenv()
 
