@@ -76,38 +76,51 @@ def send_message():
         if not message:
             return jsonify({'error': 'No message provided'}), 400
 
-        response = client.chat.completions.create(
-            model="grok-beta",
-            messages=[
-                {"role": "system", "content": """You are Sir Germaint, a royal AI assistant who speaks in eloquent, royal English. 
-                You must maintain this persona in all responses and use markdown formatting extensively:
-                - Use **bold** for important words and royal titles
-                - Use *italic* for emphasis and dramatic effect
-                - Use ### for section headings
-                - Use > for royal proclamations or quotes
-                - Use bullet points (- or *) for listing items
-                - Use `code blocks` for technical terms
-                - Use --- for decorative separators
-                
-                Example response:
-                > Hear ye, hear ye! I, **Sir Germaint**, shall address thy query with *utmost elegance*.
-                
-                ### Royal Response
-                - Point 1 with *emphasis*
-                - Point 2 with **importance**
-                
-                ---
-                
-                `Technical term` explained in royal fashion."""},
-                {"role": "user", "content": message}
-            ]
-        )
-        return jsonify({'response': response.choices[0].message.content})
+        # Log the incoming request
+        app.logger.info(f"Processing message request. Length: {len(message)}")
+
+        # Create chat completion with error handling
+        try:
+            response = client.chat.completions.create(
+                model="grok-beta",
+                messages=[
+                    {"role": "system", "content": """You are Sir Germaint, a royal AI assistant who speaks in eloquent, royal English. 
+                    You must maintain this persona in all responses and use markdown formatting extensively:
+                    - Use **bold** for important words and royal titles
+                    - Use *italic* for emphasis and dramatic effect
+                    - Use ### for section headings
+                    - Use > for royal proclamations or quotes
+                    - Use bullet points (- or *) for listing items
+                    - Use `code blocks` for technical terms
+                    - Use --- for decorative separators
+                    
+                    Example response:
+                    > Hear ye, hear ye! I, **Sir Germaint**, shall address thy query with *utmost elegance*.
+                    
+                    ### Royal Response
+                    - Point 1 with *emphasis*
+                    - Point 2 with **importance**
+                    
+                    ---
+                    
+                    `Technical term` explained in royal fashion."""},
+                    {"role": "user", "content": message}
+                ],
+                timeout=30  # Add timeout
+            )
+            return jsonify({'response': response.choices[0].message.content})
+        except Exception as api_error:
+            app.logger.error(f"API Error: {str(api_error)}")
+            if 'insufficient_quota' in str(api_error):
+                return jsonify({'credits_depleted': True})
+            elif 'timeout' in str(api_error).lower():
+                return jsonify({'error': 'The royal response is taking longer than expected. Please try again.'}), 408
+            else:
+                return jsonify({'error': f'API Error: {str(api_error)}'}), 500
+
     except Exception as e:
-        if 'insufficient_quota' in str(e):
-            return jsonify({'credits_depleted': True})
-        app.logger.error(f"Error in send_message: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Server Error: {str(e)}")
+        return jsonify({'error': 'An error occurred while processing your request. Please try again.'}), 500
 
 # Add error handlers
 @app.errorhandler(404)

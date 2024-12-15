@@ -522,7 +522,8 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: message }),
+                    timeout: 30000 // 30 second timeout
                 });
                 
                 if (response.status === 401) {
@@ -533,15 +534,19 @@
                 const data = await response.json();
                 
                 if (data.credits_depleted) {
-                    addMessage("⚠️ Credits Depleted: Please subscribe to X Premium+ to continue using the service.", false);
+                    addMessage("> ⚠️ **Credits Depleted**: Prithee subscribe to X Premium+ to continue using the royal service.", false);
                 } else if (data.error) {
-                    addMessage(`Error: ${data.error}`, false);
+                    if (response.status === 408) {
+                        addMessage("> ⏳ *My deepest apologies*, but the royal quill requires more time. Prithee try again.", false);
+                    } else {
+                        addMessage(`> 📜 *A royal proclamation of error*: ${data.error}\n\nPrithee try again or summon assistance if the issue persists.`, false);
+                    }
                 } else {
                     addMessage(data.response, false);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                addMessage('My sincerest apologies, but there appears to be an error in processing thy message.', false);
+                addMessage('> 📜 *My sincerest apologies*, but there appears to be an error in the royal communications. Prithee check thy connection and try again.', false);
             } finally {
                 // Remove loading animation
                 loadingDiv.remove();
