@@ -11,3 +11,4 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.4
 urllib3==2.1.0
+httpx>=0.24.1  # Add this line
