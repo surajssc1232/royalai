@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import httpx
 
+# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # For session management
 
@@ -20,25 +21,18 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-api_key=os.getenv('XAI_API_KEY')  # Set your OpenAI API key here
-
+# Get environment variables
+api_key = os.getenv('XAI_API_KEY')
 if not api_key:
     raise ValueError("API key not found. Please set your OpenAI API key in the .env file.")
-# Set your password here
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
-# Initialize OpenAI client with X.AI base URL
-try:
-    client = OpenAI(
-        api_key=os.getenv('XAI_API_KEY'),
-        base_url="https://api.x.ai/v1",
-        default_headers={"Content-Type": "application/json"}
-    )
-except Exception as e:
-    print(f"Error initializing OpenAI client: {str(e)}")
-    # Fallback initialization
-    client = OpenAI(api_key=os.getenv('XAI_API_KEY'))
-    client.base_url = "https://api.x.ai/v1"
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+
+# Initialize OpenAI client
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://api.x.ai/v1"
+)
 
 def is_authenticated():
     return session.get('authenticated', False)
@@ -108,5 +102,9 @@ def send_message():
             return jsonify({'credits_depleted': True})
         return jsonify({'error': str(e)})
 
+# For local development
 if __name__ == '__main__':
     app.run(debug=True)
+
+# For Vercel serverless deployment
+app = app.wsgi_app
