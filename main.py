@@ -28,9 +28,8 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
 # Initialize OpenAI client with X.AI base URL
 client = OpenAI(
-    api_key=os.getenv('XAI_API_KEY'),
-    base_url="https://api.x.ai/v1",
-    http_client=None
+    api_key=api_key,
+    base_url="https://api.x.ai/v1"
 )
 
 def is_authenticated():
