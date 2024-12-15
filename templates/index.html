@@ -512,6 +512,41 @@
         [data-theme="dark"] .message-time {
             color: #a89a8c;
         }
+
+        /* Message Actions */
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #8b7355;
+            padding: 4px 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            opacity: 1;
+            background-color: rgba(139, 115, 85, 0.1);
+            border-radius: 4px;
+        }
+
+        [data-theme="dark"] .action-btn {
+            color: #deb887;
+        }
+
+        [data-theme="dark"] .action-btn:hover {
+            background-color: rgba(222, 184, 135, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -578,13 +613,23 @@
             if (isUser) {
                 messageDiv.innerHTML = `
                     ${message}
-                    <div class="message-time">${timestamp}</div>
+                    <div class="message-footer">
+                        <div class="message-actions">
+                            <button class="action-btn" onclick="copyMessage(this)" title="Copy Message">📋 Copy</button>
+                        </div>
+                        <div class="message-time">${timestamp}</div>
+                    </div>
                 `;
             } else {
                 const htmlContent = converter.makeHtml(message);
                 messageDiv.innerHTML = `
                     ${htmlContent}
-                    <div class="message-time">${timestamp}</div>
+                    <div class="message-footer">
+                        <div class="message-actions">
+                            <button class="action-btn" onclick="copyMessage(this)" title="Copy Message">📋 Copy</button>
+                        </div>
+                        <div class="message-time">${timestamp}</div>
+                    </div>
                 `;
             }
             
@@ -714,6 +759,16 @@
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
         });
+
+        // Message Actions
+        function copyMessage(button) {
+            const messageContent = button.closest('.message').querySelector(':not(.message-footer)').textContent;
+            navigator.clipboard.writeText(messageContent).then(() => {
+                const originalText = button.innerHTML;
+                button.innerHTML = '✓ Copied';
+                setTimeout(() => button.innerHTML = originalText, 2000);
+            });
+        }
     </script>
 </body>
 </html>
