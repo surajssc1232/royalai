@@ -480,6 +480,12 @@
             border-radius: 15px 15px 0 0;
         }
 
+        .chat-header-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .chat-header h1 {
             font-size: 1.5em;
             color: #4a3c28;
@@ -662,43 +668,23 @@
         /* Mobile Menu Button */
         .mobile-menu-btn {
             display: none;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1001;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #deb887;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            background: none;
+            border: none;
             cursor: pointer;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 24px;
+            color: #4a3c28;
+            padding: 5px;
+            margin-left: 10px;
         }
 
         [data-theme="dark"] .mobile-menu-btn {
-            background: rgba(58, 50, 46, 0.95);
             color: #deb887;
-        }
-
-        /* Sidebar Overlay */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
         }
 
         /* Personality Selector - Mobile Sidebar */
         @media (max-width: 768px) {
             .mobile-menu-btn {
-                display: flex;
+                display: block;
             }
 
             .personality-selector {
@@ -710,7 +696,8 @@
                 margin: 0;
                 border-radius: 0;
                 transition: transform 0.3s ease;
-                padding-top: 70px;
+                padding-top: 20px;
+                z-index: 1001;
             }
 
             .personality-selector.active {
@@ -724,6 +711,18 @@
             .chat-wrapper {
                 margin-top: 0;
             }
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
         }
     </style>
 </head>
@@ -760,7 +759,10 @@
     </div>
     <div class="chat-wrapper">
         <div class="chat-header">
-            <h1><span class="crown">👑</span> Royal Grok AI</h1>
+            <div class="chat-header-content">
+                <h1><span class="crown">👑</span> Royal Grok AI</h1>
+            </div>
+            <div class="mobile-menu-btn" onclick="togglePersonalitySelector()">☰</div>
         </div>
         <div id="chat-container"></div>
         <div id="input-container">
@@ -777,7 +779,6 @@
         <input type="checkbox" id="theme-toggle">
         <label for="theme-toggle"></label>
     </div>
-    <div class="mobile-menu-btn" onclick="togglePersonalitySelector()">☰</div>
     <div class="sidebar-overlay" onclick="togglePersonalitySelector()"></div>
     <script>
         // Initialize showdown converter with all features enabled
@@ -979,7 +980,8 @@
 
         // Personality Selection
         document.querySelectorAll('.personality-option').forEach(option => {
-            option.addEventListener('click', async function() {
+            option.addEventListener('click', async function(e) {
+                e.stopPropagation(); // Prevent event from bubbling up
                 const personality = this.dataset.personality;
                 
                 try {
@@ -1002,6 +1004,11 @@
                     console.error('Error changing personality:', error);
                 }
             });
+        });
+
+        // Prevent sidebar from closing when clicking inside it
+        document.querySelector('.personality-selector').addEventListener('click', function(e) {
+            e.stopPropagation();
         });
 
         function togglePersonalitySelector() {
