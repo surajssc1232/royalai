@@ -4,6 +4,7 @@ from flask_limiter.util import get_remote_address
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+import httpx
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # For session management
@@ -27,10 +28,17 @@ if not api_key:
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')  # Password stored in .env file
 
 # Initialize OpenAI client with X.AI base URL
-client = OpenAI(
-    api_key=os.getenv('XAI_API_KEY'),
-    base_url="https://api.x.ai/v1"
-)
+try:
+    client = OpenAI(
+        api_key=os.getenv('XAI_API_KEY'),
+        base_url="https://api.x.ai/v1",
+        default_headers={"Content-Type": "application/json"}
+    )
+except Exception as e:
+    print(f"Error initializing OpenAI client: {str(e)}")
+    # Fallback initialization
+    client = OpenAI(api_key=os.getenv('XAI_API_KEY'))
+    client.base_url = "https://api.x.ai/v1"
 
 def is_authenticated():
     return session.get('authenticated', False)
