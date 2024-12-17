@@ -171,7 +171,7 @@ def send_message():
         # Get current personality
         personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
-        # Create chat completion with error handling
+        # Create chat completion with improved error handling
         try:
             response = client.chat.completions.create(
                 model="grok-beta",
@@ -179,21 +179,42 @@ def send_message():
                     {"role": "system", "content": personality["prompt"]},
                     {"role": "user", "content": message}
                 ],
-                timeout=30
+                timeout=60  # Increase timeout to 60 seconds
             )
+            
+            if not response or not response.choices:
+                return jsonify({'error': 'No response received from the API'}), 500
+                
             return jsonify({'response': response.choices[0].message.content})
+            
+        except TimeoutError:
+            return jsonify({
+                'error': 'The royal scribe requires more time. Please try a shorter message or try again.'
+            }), 408
         except Exception as api_error:
             app.logger.error(f"API Error: {str(api_error)}")
-            if 'insufficient_quota' in str(api_error):
+            error_message = str(api_error).lower()
+            
+            if 'insufficient_quota' in error_message:
                 return jsonify({'credits_depleted': True})
-            elif 'timeout' in str(api_error).lower():
-                return jsonify({'error': 'The royal response is taking longer than expected. Please try again.'}), 408
+            elif 'timeout' in error_message:
+                return jsonify({
+                    'error': 'The royal response is taking longer than expected. Please try again.'
+                }), 408
+            elif 'rate_limit' in error_message:
+                return jsonify({
+                    'error': 'The royal court is quite busy. Please wait a moment before trying again.'
+                }), 429
             else:
-                return jsonify({'error': f'API Error: {str(api_error)}'}), 500
+                return jsonify({
+                    'error': 'A mystical disturbance has occurred. Please try again shortly.'
+                }), 500
 
     except Exception as e:
         app.logger.error(f"Server Error: {str(e)}")
-        return jsonify({'error': 'An error occurred while processing your request. Please try again.'}), 500
+        return jsonify({
+            'error': 'The royal messenger encountered an unexpected issue. Please try again.'
+        }), 500
 
 # Add error handlers
 @app.errorhandler(404)
