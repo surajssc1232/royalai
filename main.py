@@ -284,15 +284,11 @@ Response:"""
 
         response = co.generate(
             prompt=prompt,
-            model='command',
+            model='command-r-plus-08-2024',
             max_tokens=500,
             temperature=0.9,
-            k=0,
-            p=0.75,
-            frequency_penalty=0.1,
-            presence_penalty=0.1,
-            stop_sequences=["User:", "Human:"],
-            return_likelihoods='NONE'
+            # stop_sequences=["User:", "Human:"],
+            # return_likelihoods='NONE'
         )
 
         if response and response.generations:
