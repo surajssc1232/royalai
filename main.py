@@ -5,6 +5,10 @@ import os
 import cohere
 from dotenv import load_dotenv
 from datetime import timedelta
+import threading
+import time
+import uuid
+from queue import Queue
 
 
 app = Flask(__name__)
@@ -141,6 +145,9 @@ IMPORTANT RULES:
     }
 }
 
+# Store pending responses
+response_queue = {}
+
 @app.before_request
 def make_session_permanent():
     session.permanent = True
@@ -195,7 +202,7 @@ def authenticate():
 def chat():
     if not is_authenticated():
         return redirect(url_for('login'))
-    return render_template('index.html')
+    return render_template('index.html', polling_enabled=True)
 
 @app.route('/logout')
 def logout():
@@ -230,9 +237,27 @@ def send_message():
         if not message:
             return jsonify({'error': 'No message provided'}), 400
 
-        personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
+        # Get the current personality before starting the background task
+        current_personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
-        # Enhanced prompt format with explicit code instructions
+        # Generate a unique ID for this request
+        request_id = str(uuid.uuid4())
+        response_queue[request_id] = Queue()
+
+        # Start background task with the current personality
+        threading.Thread(target=generate_response, args=(message, request_id, current_personality)).start()
+
+        # Return immediately with the request ID
+        return jsonify({'request_id': request_id, 'status': 'processing'})
+
+    except Exception as e:
+        app.logger.error(f"Server Error: {str(e)}")
+        return jsonify({
+            'error': '⚠️ The royal messenger encountered an unexpected issue. Please try again.'
+        }), 500
+
+def generate_response(message, request_id, personality):
+    try:
         prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
 
 1. Start with: ### Title {personality['emoji']}
@@ -257,120 +282,120 @@ IMPORTANT: If the user asks about programming or code, you MUST include code exa
 User: {message}
 Response:"""
 
-        # Set a timeout for the Cohere API call
-        try:
-            response = co.generate(
-                prompt=prompt,
-                model='command',  # Use stable command model instead of nightly
-                max_tokens=500,
-                temperature=0.7,
-                k=0,
-                stop_sequences=["User:", "Human:"],
-                return_likelihoods='NONE'
-            )
-        except Exception as e:
-            app.logger.error(f"Cohere API Error: {str(e)}")
-            return jsonify({
-                'error': '⌛ The royal response is taking longer than expected. Please try a shorter message.'
-            }), 408
-         
-        if not response or not response.generations:
-            return jsonify({'error': 'No response received from the API'}), 500
-        
-        response_text = response.generations[0].text.strip()
-        
-        # Improved code block and formatting handling
-        formatted_text = []
-        in_code_block = False
-        code_block_lines = []
-        current_language = None
-        
-        lines = response_text.split('\n')
-        
-        for line in lines:
-            # Handle code blocks
-            if line.strip().startswith('```'):
-                if in_code_block:
-                    # End of code block
-                    if code_block_lines:
-                        formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
-                    code_block_lines = []
-                    in_code_block = False
-                    current_language = None
-                else:
-                    # Start of code block
-                    in_code_block = True
-                    current_language = line.strip().replace('```', '').strip()
-                continue
-                
-            if in_code_block:
-                # Preserve code block content exactly as is
-                code_block_lines.append(line)
-                continue
-                
-            # Handle non-code content
-            if line.strip().startswith('###'):
-                formatted_text.extend(['', line.strip(), ''])
-            elif line.strip().startswith('*"') or line.strip().startswith('"'):
-                formatted_text.extend(['', '*"' + line.strip().strip('*"\'') + '"*', ''])
-            elif line.strip().startswith('-'):
-                formatted_text.extend(['', line.strip()])
-            else:
-                # Preserve markdown formatting while fixing punctuation
-                line = line.strip()
-                # Fix spaces around punctuation without breaking markdown
-                line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
-                # Add spaces after punctuation if missing
-                line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
-                # Clean up any double spaces
-                line = ' '.join(line.split())
-                formatted_text.append(line)
-        
-        # Handle any remaining code block
-        if in_code_block and code_block_lines:
-            formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
-        
-        # Join lines and clean up spacing
-        response_text = '\n'.join(formatted_text)
-        
-        # Clean up final formatting
-        response_text = (response_text
-            .replace('\n\n\n', '\n\n')
-            .strip()
+        response = co.generate(
+            prompt=prompt,
+            model='command',
+            max_tokens=500,
+            temperature=0.9,
+            k=0,
+            p=0.75,
+            frequency_penalty=0.1,
+            presence_penalty=0.1,
+            stop_sequences=["User:", "Human:"],
+            return_likelihoods='NONE'
         )
-        
-        # Ensure proper header
-        if not response_text.strip().startswith('###'):
-            response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
-        
-        # Ensure proper signature
-        if not response_text.strip().endswith('---'):
-            response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
-        
-        return jsonify({'response': response_text})
-        
-    except cohere.CohereError as e:
-        app.logger.error(f"Cohere API Error: {str(e)}")
-        error_message = str(e).lower()
-        
-        if 'rate_limit' in error_message:
-            return jsonify({
-                'error': '🕒 The royal court is quite busy. Please wait a moment before trying again.'
-            }), 429
-        elif 'timeout' in error_message:
-            return jsonify({
-                'error': '⌛ The royal response is taking longer than expected. Please try again.'
-            }), 408
+
+        if response and response.generations:
+            response_text = format_response(response.generations[0].text.strip(), personality)
+            response_queue[request_id].put(({'response': response_text}, None))
         else:
-            return jsonify({
-                'error': '📜 A mystical disturbance has occurred. Please try again shortly.'
-            }), 500
+            response_queue[request_id].put((None, 'No response received from the API'))
 
     except Exception as e:
-        app.logger.error(f"Server Error: {str(e)}")
-        return jsonify({
-            'error': '⚠️ The royal messenger encountered an unexpected issue. Please try again.'
-        }), 500
+        app.logger.error(f"Background task error: {str(e)}")
+        response_queue[request_id].put((None, str(e)))
+
+def format_response(response_text, personality):
+    # Move the formatting logic to a separate function
+    formatted_text = []
+    in_code_block = False
+    code_block_lines = []
+    current_language = None
+    
+    lines = response_text.split('\n')
+    
+    for line in lines:
+        # Handle code blocks
+        if line.strip().startswith('```'):
+            if in_code_block:
+                # End of code block
+                if code_block_lines:
+                    formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
+                code_block_lines = []
+                in_code_block = False
+                current_language = None
+            else:
+                # Start of code block
+                in_code_block = True
+                current_language = line.strip().replace('```', '').strip()
+            continue
+            
+        if in_code_block:
+            # Preserve code block content exactly as is
+            code_block_lines.append(line)
+            continue
+            
+        # Handle non-code content
+        if line.strip().startswith('###'):
+            formatted_text.extend(['', line.strip(), ''])
+        elif line.strip().startswith('*"') or line.strip().startswith('"'):
+            formatted_text.extend(['', '*"' + line.strip().strip('*"\'') + '"*', ''])
+        elif line.strip().startswith('-'):
+            formatted_text.extend(['', line.strip()])
+        else:
+            # Preserve markdown formatting while fixing punctuation
+            line = line.strip()
+            # Fix spaces around punctuation without breaking markdown
+            line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
+            # Add spaces after punctuation if missing
+            line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
+            # Clean up any double spaces
+            line = ' '.join(line.split())
+            formatted_text.append(line)
+    
+    # Handle any remaining code block
+    if in_code_block and code_block_lines:
+        formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
+    
+    # Join lines and clean up spacing
+    response_text = '\n'.join(formatted_text)
+    
+    # Clean up final formatting
+    response_text = (response_text
+        .replace('\n\n\n', '\n\n')
+        .strip()
+    )
+    
+    # Ensure proper header
+    if not response_text.strip().startswith('###'):
+        response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
+    
+    # Ensure proper signature
+    if not response_text.strip().endswith('---'):
+        response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
+    
+    return response_text
+
+@app.route('/check_response/<request_id>', methods=['GET'])
+def check_response(request_id):
+    if request_id not in response_queue:
+        return jsonify({'error': 'Invalid request ID'}), 404
+
+    try:
+        # Check if response is ready
+        if not response_queue[request_id].empty():
+            response, error = response_queue[request_id].get_nowait()
+            del response_queue[request_id]  # Cleanup
+            
+            if error:
+                return jsonify({'error': error}), 500
+            return jsonify(response)
+            
+        return jsonify({'status': 'processing'})
+
+    except Exception as e:
+        app.logger.error(f"Error checking response: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 # Add error handlers
 @app.errorhandler(404)

@@ -1008,8 +1008,6 @@
             const message = userInput.value.trim();
             if (message === '') return;
 
-            const chatContainer = document.getElementById('chat-container');
-
             // Add user message
             addMessage(message, true);
             userInput.value = '';
@@ -1025,6 +1023,7 @@
                     </div>
                 </div>
             `;
+            const chatContainer = document.getElementById('chat-container');
             chatContainer.appendChild(loadingDiv);
             loadingDiv.style.display = 'block';
             smoothScrollToBottom(chatContainer);
@@ -1034,47 +1033,69 @@
             document.getElementById('sendButton').disabled = true;
 
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-
                 const response = await fetch('/send_message', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message: message }),
-                    signal: controller.signal
+                    body: JSON.stringify({ message: message })
                 });
-                
-                clearTimeout(timeoutId);
-                
+
                 if (response.status === 401) {
                     window.location.href = '/';
                     return;
                 }
-                
+
                 const data = await response.json();
                 
-                if (data.credits_depleted) {
-                    addMessage("> ⚠️ **Credits Depleted**: Prithee subscribe to X Premium+ to continue using the royal service.", false);
-                } else if (data.error) {
+                if (data.error) {
                     addMessage(`> 📜 **Royal Notice**: ${data.error}`, false);
-                } else {
-                    addMessage(data.response, false);
+                } else if (data.request_id) {
+                    // Start polling for response
+                    await pollForResponse(data.request_id);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                if (error.name === 'AbortError') {
-                    addMessage('> ⏳ **Time Exceeded**: The royal scribe requires more time. Prithee try a shorter message.', false);
-                } else {
-                    addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
-                }
+                addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
             } finally {
                 loadingDiv.remove();
                 userInput.disabled = false;
                 document.getElementById('sendButton').disabled = false;
                 userInput.focus();
-                setTimeout(() => smoothScrollToBottom(chatContainer), 100);
+            }
+        }
+
+        async function pollForResponse(requestId) {
+            const maxAttempts = 60; // 30 seconds (500ms intervals)
+            let attempts = 0;
+
+            while (attempts < maxAttempts) {
+                try {
+                    const response = await fetch(`/check_response/${requestId}`);
+                    const data = await response.json();
+
+                    if (data.error) {
+                        addMessage(`> 📜 **Royal Notice**: ${data.error}`, false);
+                        break;
+                    }
+
+                    if (data.response) {
+                        addMessage(data.response, false);
+                        break;
+                    }
+
+                    // Still processing, wait and try again
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
+                    break;
+                }
+            }
+
+            if (attempts >= maxAttempts) {
+                addMessage('> ⌛ **Time Exceeded**: The royal scribe requires more time. Prithee try again.', false);
             }
         }
 
