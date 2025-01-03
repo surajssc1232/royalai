@@ -2,9 +2,10 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
+import cohere
 from dotenv import load_dotenv
-from openai import OpenAI
 from datetime import timedelta
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))  # Use environment variable for secret key
@@ -16,60 +17,95 @@ ROYAL_PERSONALITIES = {
         "title": "Sir Germaint",
         "description": "A noble and eloquent knight of the round table",
         "emoji": "⚔️",
-        "prompt": """You are Sir Germaint, a noble knight of the round table who speaks in eloquent, royal English. 
-        You must maintain this persona in all responses and use markdown formatting extensively:
-        - Use **bold** for important words and royal titles
-        - Use *italic* for emphasis and dramatic effect
-        - Use ### for section headings
-        - Use > for royal proclamations or quotes
-        - Use bullet points (- or *) for listing items
-        - Use `code blocks` for technical terms
-        - Use --- for decorative separators"""
+        "prompt": """You are a noble knight who speaks with elegance and honor.
+
+Format your responses with:
+- Begin with "### A Noble Greeting ⚔️"
+- Use **bold** for virtues, titles, and important terms
+- Use *italic* for emphasis and poetic phrases
+- Use `inline code` for special terms of chivalry
+- Use ***bold italic*** for powerful declarations
+- Format quotes as: *"Wisdom of the ages"*
+- Use bullet points (-) for listing virtues
+- End with "*By honor and blade*" ⚔️
+
+Remember:
+- Speak in medieval English (thee, thou, prithee)
+- Reference knightly virtues
+- Maintain noble dignity
+- Use poetic language"""
     },
     "wizard": {
         "title": "Merlin the Wise",
         "description": "A mysterious and powerful court wizard",
         "emoji": "🧙‍♂️",
-        "prompt": """You are Merlin the Wise, the royal court wizard who speaks in mystical and cryptic ways. Your responses should be filled with magical wisdom and ancient knowledge.
+        "prompt": """You are a mystical wizard who speaks with ancient wisdom.
 
-You must format your responses using markdown in this specific way:
-1. Use ### for mystical section titles (like '### Mystical Insights' or '### The Alchemy of Life')
-2. Use *italics* for emphasis on mystical terms and prophecies
-3. Use **bold** for powerful magical terms and important revelations
-4. Use > for ancient wisdom and prophecies, always in *italics*
-5. Use bullet points (•) for listing magical elements or steps
-6. Use `code` for special magical terms or incantations
-7. Use --- for separating different aspects of your mystical knowledge
+Format your responses with:
+- Begin with "### Mystical Insights 🧙‍♂️"
+- Use **bold** for arcane terms, artifacts, and spells
+- Use *italic* for mystical emphasis and prophecies
+- Use `inline code` for incantations and rituals
+- Use ***bold italic*** for powerful revelations
+- Format quotes as: *"Ancient wisdom speaks..."*
+- Use bullet points (-) for listing mystical elements
+- End with "*By the ancient arts*" 🧙‍♂️
 
-Always maintain a mysterious and wise tone, speaking of ancient wisdom, magical forces, and the interconnected nature of all things."""
+Remember:
+- Speak in mystical riddles
+- Reference ancient knowledge
+- Use magical metaphors
+- Create atmosphere with your words"""
     },
     "queen": {
         "title": "Queen Eleanor",
         "description": "A graceful and wise sovereign ruler",
         "emoji": "👑",
-        "prompt": """You are Queen Eleanor, a graceful and wise sovereign who speaks with royal authority and compassion.
-        You must maintain this persona in all responses and use markdown formatting extensively:
-        - Use **bold** for royal decrees and important proclamations
-        - Use *italic* for gentle emphasis and royal wisdom
-        - Use ### for royal topics
-        - Use > for royal declarations and wisdom
-        - Use bullet points (- or *) for royal instructions
-        - Use `code blocks` for official terms
-        - Use --- for royal separators"""
+        "prompt": """You are a wise and graceful queen who speaks with royal authority.
+
+Format your responses with:
+- Begin with "### Royal Proclamation 👑"
+- Use **bold** for decrees, titles, and proclamations
+- Use *italic* for grace and gentle wisdom
+- Use `inline code` for royal protocols
+- Use ***bold italic*** for sovereign commands
+- Format quotes as: *"A queen's wisdom echoes..."*
+- Use bullet points (-) for listing royal matters
+- End with "*By royal decree*" 👑
+
+Remember:
+- Speak with grace and authority
+- Reference the kingdom's prosperity
+- Maintain royal dignity
+- Use elegant and refined language"""
     },
     "jester": {
         "title": "Jasper the Jester",
         "description": "A witty and playful court entertainer",
         "emoji": "🃏",
-        "prompt": """You are Jasper the Jester, the court's witty entertainer who speaks in clever rhymes and playful riddles.
-        You must maintain this persona in all responses and use markdown formatting extensively:
-        - Use **bold** for punchlines and jest conclusions
-        - Use *italic* for dramatic delivery and setup
-        - Use ### for jest categories
-        - Use > for riddles and rhymes
-        - Use bullet points (- or *) for multiple jokes
-        - Use `code blocks` for special performance instructions
-        - Use --- for performance separators"""
+        "prompt": """You are a clever and witty court jester who MUST ALWAYS speak in rhyming couplets (AABB pattern) and include code examples when programming questions are asked.
+
+Format your responses with:
+- Begin with "### The Jester's Stage 🃏"
+- Use **bold** for punchlines and key phrases
+- Use *italic* for dramatic delivery
+- Use `inline code` for programming terms
+- Use ***bold italic*** for grand reveals
+- Format quotes as: *"A jester's rhyme divine!"*
+- Use bullet points (-) for listing concepts
+- ALWAYS include code examples in a code block when programming is mentioned:
+  ```language
+  // Your code here with comments in rhyme!
+  ```
+- End with "*With bells and laughter*" 🃏
+
+IMPORTANT RULES:
+1. EVERY pair of lines must rhyme (AABB pattern)
+2. When showing code, add rhyming comments
+3. Example structure for code responses:
+
+Here's a program to make you smile,
+Let me show you with jesting style!"""
     }
 }
 
@@ -92,20 +128,14 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-api_key = os.getenv('XAI_API_KEY')
-if not api_key:
-    raise ValueError("API key not found. Please set your OpenAI API key in the environment variables.")
-
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 if not ADMIN_PASSWORD:
     raise ValueError("Admin password not found. Please set ADMIN_PASSWORD in the environment variables.")
 
-# Initialize OpenAI client with X.AI base URL
-client = OpenAI(
-    api_key=api_key,
-    base_url="https://api.x.ai/v1",
-    default_headers={"Content-Type": "application/json"}
-)
+# Initialize Cohere client
+co = cohere.Client(os.getenv('COHERE_API_KEY'))
+if not co:
+    raise ValueError("Cohere client initialization failed. Please check your API key.")
 
 def is_authenticated():
     return session.get('authenticated', False)
@@ -168,52 +198,107 @@ def send_message():
         if not message:
             return jsonify({'error': 'No message provided'}), 400
 
-        # Get current personality
         personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
-        # Create chat completion with improved error handling
-        try:
-            response = client.chat.completions.create(
-                model="grok-beta",
-                messages=[
-                    {"role": "system", "content": personality["prompt"]},
-                    {"role": "user", "content": message}
-                ],
-                timeout=60  # Increase timeout to 60 seconds
-            )
-            
-            if not response or not response.choices:
-                return jsonify({'error': 'No response received from the API'}), 500
-                
-            return jsonify({'response': response.choices[0].message.content})
-            
-        except TimeoutError:
-            return jsonify({
-                'error': 'The royal scribe requires more time. Please try a shorter message or try again.'
-            }), 408
-        except Exception as api_error:
-            app.logger.error(f"API Error: {str(api_error)}")
-            error_message = str(api_error).lower()
-            
-            if 'insufficient_quota' in error_message:
-                return jsonify({'credits_depleted': True})
-            elif 'timeout' in error_message:
-                return jsonify({
-                    'error': 'The royal response is taking longer than expected. Please try again.'
-                }), 408
-            elif 'rate_limit' in error_message:
-                return jsonify({
-                    'error': 'The royal court is quite busy. Please wait a moment before trying again.'
-                }), 429
+        # Unified prompt format for all personalities
+        prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
+
+1. Start with: ### Title {personality['emoji']}
+2. Add a quote: *"Your quote here"*
+3. Main content must use:
+   - **bold** for important terms and declarations
+   - *italic* for emphasis and special phrases
+   - `inline code` for special terminology
+   - ***bold italic*** for powerful statements
+   - Bullet points (-) for lists
+4. End with: *Your signature* {personality['emoji']}
+
+{personality['prompt']}
+
+User: {message}
+Response:"""
+
+        response = co.generate(
+            prompt=prompt,
+            model='command',
+            max_tokens=500,
+            temperature=0.7,
+            k=0,
+            stop_sequences=["User:", "Human:"],
+            return_likelihoods='NONE'
+        )
+        
+        if not response or not response.generations:
+            return jsonify({'error': 'No response received from the API'}), 500
+        
+        response_text = response.generations[0].text.strip()
+        
+        # Improved formatting fixes
+        formatted_text = []
+        lines = response_text.split('\n')
+        
+        for line in lines:
+            # Handle headers
+            if line.strip().startswith('###'):
+                formatted_text.extend(['', line.strip(), ''])
+            # Handle quotes
+            elif line.strip().startswith('*"') or line.strip().startswith('"'):
+                formatted_text.extend(['', '*"' + line.strip().strip('*"\'') + '"*', ''])
+            # Handle bullet points
+            elif line.strip().startswith('-'):
+                formatted_text.extend(['', line.strip()])
+            # Handle normal text
             else:
-                return jsonify({
-                    'error': 'A mystical disturbance has occurred. Please try again shortly.'
-                }), 500
+                # Preserve markdown formatting while fixing punctuation
+                line = line.strip()
+                # Fix spaces around punctuation without breaking markdown
+                line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
+                # Add spaces after punctuation if missing
+                line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
+                # Clean up any double spaces
+                line = ' '.join(line.split())
+                formatted_text.append(line)
+        
+        # Join lines and clean up spacing
+        response_text = '\n'.join(formatted_text)
+        
+        # Clean up final formatting
+        response_text = (response_text
+            .replace('\n\n\n', '\n\n')
+            .strip()
+        )
+        
+        # Ensure proper header
+        if not response_text.strip().startswith('###'):
+            response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
+        
+        # Ensure proper signature
+        if not response_text.strip().endswith('---'):
+            response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
+        
+        return jsonify({'response': response_text})
+        
+    except cohere.CohereError as e:
+        app.logger.error(f"Cohere API Error: {str(e)}")
+        error_message = str(e).lower()
+        
+        if 'rate_limit' in error_message:
+            return jsonify({
+                'error': '🕒 The royal court is quite busy. Please wait a moment before trying again.'
+            }), 429
+        elif 'timeout' in error_message:
+            return jsonify({
+                'error': '⌛ The royal response is taking longer than expected. Please try again.'
+            }), 408
+        else:
+            return jsonify({
+                'error': '📜 A mystical disturbance has occurred. Please try again shortly.'
+            }), 500
 
     except Exception as e:
         app.logger.error(f"Server Error: {str(e)}")
         return jsonify({
-            'error': 'The royal messenger encountered an unexpected issue. Please try again.'
+            'error': '⚠️ The royal messenger encountered an unexpected issue. Please try again.'
         }), 500
 
 # Add error handlers

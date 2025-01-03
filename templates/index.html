@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Add showdown library for markdown parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Add common languages you want to support -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -681,6 +688,172 @@
         [data-theme="dark"] .personality-selector {
             background: rgba(58, 50, 46, 0.95);
         }
+
+        /* Add these to your existing styles */
+        .bot-message pre {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            margin: 10px 0;
+            padding: 12px;
+            overflow-x: auto;
+            border: 1px solid #404040;
+        }
+
+        /* Light mode code block styles */
+        [data-theme="light"] .bot-message pre {
+            background-color: #f6f8fa !important;
+            border: 1px solid #e1e4e8;
+        }
+
+        [data-theme="light"] .bot-message code {
+            color: #24292e !important;
+        }
+
+        .bot-message code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: #d4d4d4;
+            padding-left: 16px;  /* Add indentation for code blocks */
+        }
+
+        /* Code block indentation */
+        .bot-message pre code {
+            display: block;
+            padding-left: 16px;  /* Base indentation */
+        }
+
+        /* Indentation for nested code blocks */
+        .bot-message pre code .indent-1 { padding-left: 32px; }
+        .bot-message pre code .indent-2 { padding-left: 48px; }
+        .bot-message pre code .indent-3 { padding-left: 64px; }
+
+        /* Syntax highlighting colors - consistent in both themes */
+        .hljs {
+            background: transparent !important;
+        }
+
+        /* Light mode syntax highlighting */
+        [data-theme="light"] .hljs {
+            color: #24292e !important;
+        }
+
+        [data-theme="light"] .hljs-keyword,
+        [data-theme="light"] .hljs-selector-tag,
+        [data-theme="light"] .hljs-built_in,
+        [data-theme="light"] .hljs-name,
+        [data-theme="light"] .hljs-tag {
+            color: #d73a49 !important;
+        }
+
+        [data-theme="light"] .hljs-string,
+        [data-theme="light"] .hljs-title,
+        [data-theme="light"] .hljs-section,
+        [data-theme="light"] .hljs-attribute,
+        [data-theme="light"] .hljs-literal,
+        [data-theme="light"] .hljs-template-tag,
+        [data-theme="light"] .hljs-template-variable,
+        [data-theme="light"] .hljs-type,
+        [data-theme="light"] .hljs-addition {
+            color: #032f62 !important;
+        }
+
+        [data-theme="light"] .hljs-comment,
+        [data-theme="light"] .hljs-quote,
+        [data-theme="light"] .hljs-deletion,
+        [data-theme="light"] .hljs-meta {
+            color: #6a737d !important;
+        }
+
+        [data-theme="light"] .hljs-number,
+        [data-theme="light"] .hljs-regexp,
+        [data-theme="light"] .hljs-symbol,
+        [data-theme="light"] .hljs-variable,
+        [data-theme="light"] .hljs-template-variable,
+        [data-theme="light"] .hljs-link,
+        [data-theme="light"] .hljs-selector-attr,
+        [data-theme="light"] .hljs-selector-pseudo {
+            color: #005cc5 !important;
+        }
+
+        [data-theme="light"] .hljs-doctag,
+        [data-theme="light"] .hljs-attr {
+            color: #005cc5 !important;
+        }
+
+        /* Ensure inline code is also visible */
+        .bot-message p code {
+            background-color: #1e1e1e !important;
+            color: #d4d4d4 !important;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #404040;
+        }
+
+        /* Remove any theme-specific overrides */
+        [data-theme="dark"] .bot-message pre,
+        [data-theme="light"] .bot-message pre {
+            background-color: #1e1e1e !important;
+            border: 1px solid #404040;
+        }
+
+        [data-theme="dark"] .bot-message code,
+        [data-theme="light"] .bot-message code {
+            color: #d4d4d4 !important;
+        }
+
+        /* Dark mode syntax highlighting */
+        [data-theme="dark"] .hljs {
+            color: #d4d4d4 !important;
+        }
+
+        [data-theme="dark"] .hljs-keyword,
+        [data-theme="dark"] .hljs-selector-tag,
+        [data-theme="dark"] .hljs-built_in,
+        [data-theme="dark"] .hljs-name,
+        [data-theme="dark"] .hljs-tag {
+            color: #569cd6 !important;
+        }
+
+        [data-theme="dark"] .hljs-string,
+        [data-theme="dark"] .hljs-title,
+        [data-theme="dark"] .hljs-section,
+        [data-theme="dark"] .hljs-attribute,
+        [data-theme="dark"] .hljs-literal,
+        [data-theme="dark"] .hljs-template-tag,
+        [data-theme="dark"] .hljs-template-variable,
+        [data-theme="dark"] .hljs-type,
+        [data-theme="dark"] .hljs-addition {
+            color: #ce9178 !important;
+        }
+
+        [data-theme="dark"] .hljs-comment,
+        [data-theme="dark"] .hljs-quote,
+        [data-theme="dark"] .hljs-deletion,
+        [data-theme="dark"] .hljs-meta {
+            color: #6a9955 !important;
+        }
+
+        [data-theme="dark"] .hljs-number,
+        [data-theme="dark"] .hljs-regexp,
+        [data-theme="dark"] .hljs-symbol,
+        [data-theme="dark"] .hljs-variable,
+        [data-theme="dark"] .hljs-template-variable,
+        [data-theme="dark"] .hljs-link,
+        [data-theme="dark"] .hljs-selector-attr,
+        [data-theme="dark"] .hljs-selector-pseudo {
+            color: #b5cea8 !important;
+        }
+
+        [data-theme="dark"] .hljs-doctag,
+        [data-theme="dark"] .hljs-attr {
+            color: #9cdcfe !important;
+        }
+
+        [data-theme="dark"] .hljs-function,
+        [data-theme="dark"] .hljs-subst {
+            color: #dcdcdc !important;
+        }
     </style>
 </head>
 <body>
@@ -792,11 +965,15 @@
                         <div class="message-time">${timestamp}</div>
                     </div>
                 `;
+                
+                // Apply syntax highlighting to code blocks
+                messageDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
             }
             
             chatContainer.appendChild(messageDiv);
             setTimeout(() => messageDiv.classList.add('show'), 10);
-            
             smoothScrollToBottom(chatContainer);
         }
 
