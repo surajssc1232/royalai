@@ -218,14 +218,16 @@ def send_message():
 User: {message}
 Response:"""
 
+        # Set a timeout for the Cohere API call
         response = co.generate(
             prompt=prompt,
             model='command',
-            max_tokens=500,
+            max_tokens=300,  # Reduced from 500 to improve response time
             temperature=0.7,
             k=0,
             stop_sequences=["User:", "Human:"],
-            return_likelihoods='NONE'
+            return_likelihoods='NONE',
+            timeout=8  # Set timeout to 8 seconds to stay within Vercel's limit
         )
         
         if not response or not response.generations:
