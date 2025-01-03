@@ -200,40 +200,52 @@ def send_message():
 
         personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
-        # Unified prompt format for all personalities
-        prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
-
+        # Break down the prompt into smaller parts
+        system_prompt = f"""You are {personality['title']}. Keep responses concise and under 150 words.
+Format your response using these patterns:
 1. Start with: ### Title {personality['emoji']}
 2. Add a quote: *"Your quote here"*
-3. Main content must use:
-   - **bold** for important terms and declarations
-   - *italic* for emphasis and special phrases
-   - `inline code` for special terminology
-   - ***bold italic*** for powerful statements
+3. Main content with:
+   - **bold** for important terms
+   - *italic* for emphasis
+   - `code` for special terms
+   - ***bold italic*** for power
    - Bullet points (-) for lists
 4. End with: *Your signature* {personality['emoji']}
 
-{personality['prompt']}
+{personality['prompt']}"""
 
-User: {message}
-Response:"""
+        user_prompt = f"User: {message}\nResponse:"
 
-        # Set a timeout for the Cohere API call
+        # First try with a very short response
         try:
             response = co.generate(
-                prompt=prompt,
+                prompt=system_prompt + "\n\n" + user_prompt,
                 model='command',
-                max_tokens=250,  # Further reduced for faster response
+                max_tokens=150,  # Start with very short response
                 temperature=0.7,
                 k=0,
                 stop_sequences=["User:", "Human:"],
                 return_likelihoods='NONE'
             )
-        except Exception as e:
-            app.logger.error(f"Cohere API Error: {str(e)}")
-            return jsonify({
-                'error': '⌛ The royal response is taking longer than expected. Please try a shorter message.'
-            }), 408
+        except Exception as first_error:
+            app.logger.error(f"First attempt error: {str(first_error)}")
+            # Try again with even shorter response
+            try:
+                response = co.generate(
+                    prompt=system_prompt + "\n\nProvide a very brief response to: " + user_prompt,
+                    model='command',
+                    max_tokens=100,  # Even shorter fallback
+                    temperature=0.7,
+                    k=0,
+                    stop_sequences=["User:", "Human:"],
+                    return_likelihoods='NONE'
+                )
+            except Exception as second_error:
+                app.logger.error(f"Second attempt error: {str(second_error)}")
+                return jsonify({
+                    'error': '⌛ The royal court is quite busy. Please try a shorter message or try again shortly.'
+                }), 408
          
         if not response or not response.generations:
             return jsonify({'error': 'No response received from the API'}), 500
@@ -256,52 +268,24 @@ Response:"""
                 formatted_text.extend(['', line.strip()])
             # Handle normal text
             else:
-                # Preserve markdown formatting while fixing punctuation
-                line = line.strip()
-                # Fix spaces around punctuation without breaking markdown
-                line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
-                # Add spaces after punctuation if missing
-                line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
-                # Clean up any double spaces
-                line = ' '.join(line.split())
+                # Quick formatting fixes
+                line = (line.strip()
+                    .replace(' ,', ',').replace(' .', '.')
+                    .replace(',', ', ').replace('.', '. ')
+                    .replace('  ', ' '))
                 formatted_text.append(line)
         
-        # Join lines and clean up spacing
-        response_text = '\n'.join(formatted_text)
+        # Join and clean up
+        response_text = '\n'.join(formatted_text).strip()
         
-        # Clean up final formatting
-        response_text = (response_text
-            .replace('\n\n\n', '\n\n')
-            .strip()
-        )
-        
-        # Ensure proper header
-        if not response_text.strip().startswith('###'):
+        # Ensure proper header and signature
+        if not response_text.startswith('###'):
             response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
-        
-        # Ensure proper signature
-        if not response_text.strip().endswith('---'):
-            response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
+        if not response_text.endswith('---'):
+            response_text = f"{response_text}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
         
         return jsonify({'response': response_text})
         
-    except cohere.CohereError as e:
-        app.logger.error(f"Cohere API Error: {str(e)}")
-        error_message = str(e).lower()
-        
-        if 'rate_limit' in error_message:
-            return jsonify({
-                'error': '🕒 The royal court is quite busy. Please wait a moment before trying again.'
-            }), 429
-        elif 'timeout' in error_message:
-            return jsonify({
-                'error': '⌛ The royal response is taking longer than expected. Please try again.'
-            }), 408
-        else:
-            return jsonify({
-                'error': '📜 A mystical disturbance has occurred. Please try again shortly.'
-            }), 500
-
     except Exception as e:
         app.logger.error(f"Server Error: {str(e)}")
         return jsonify({
