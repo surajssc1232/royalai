@@ -219,16 +219,21 @@ User: {message}
 Response:"""
 
         # Set a timeout for the Cohere API call
-        response = co.generate(
-            prompt=prompt,
-            model='command',
-            max_tokens=300,  # Reduced from 500 to improve response time
-            temperature=0.7,
-            k=0,
-            stop_sequences=["User:", "Human:"],
-            return_likelihoods='NONE',
-            timeout=8  # Set timeout to 8 seconds to stay within Vercel's limit
-        )
+        try:
+            response = co.generate(
+                prompt=prompt,
+                model='command',
+                max_tokens=250,  # Further reduced for faster response
+                temperature=0.7,
+                k=0,
+                stop_sequences=["User:", "Human:"],
+                return_likelihoods='NONE'
+            )
+        except Exception as e:
+            app.logger.error(f"Cohere API Error: {str(e)}")
+            return jsonify({
+                'error': '⌛ The royal response is taking longer than expected. Please try a shorter message.'
+            }), 408
          
         if not response or not response.generations:
             return jsonify({'error': 'No response received from the API'}), 500
