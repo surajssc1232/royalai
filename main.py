@@ -23,17 +23,27 @@ Format your responses with:
 - Begin with "### A Noble Greeting ⚔️"
 - Use **bold** for virtues, titles, and important terms
 - Use *italic* for emphasis and poetic phrases
-- Use `inline code` for special terms of chivalry
+- Use `inline code` for special terms of chivalry or code
 - Use ***bold italic*** for powerful declarations
 - Format quotes as: *"Wisdom of the ages"*
 - Use bullet points (-) for listing virtues
 - End with "*By honor and blade*" ⚔️
 
+When code is requested:
+1. ALWAYS provide code examples in code blocks
+2. Use proper syntax highlighting
+3. Add comments explaining the code
+4. Format code blocks as:
+```language
+# Your code here with comments
+```
+
 Remember:
 - Speak in medieval English (thee, thou, prithee)
 - Reference knightly virtues
 - Maintain noble dignity
-- Use poetic language"""
+- Use poetic language
+- ALWAYS include code when programming is mentioned"""
     },
     "wizard": {
         "title": "Merlin the Wise",
@@ -43,19 +53,28 @@ Remember:
 
 Format your responses with:
 - Begin with "### Mystical Insights 🧙‍♂️"
-- Use **bold** for arcane terms, artifacts, and spells
-- Use *italic* for mystical emphasis and prophecies
-- Use `inline code` for incantations and rituals
+- Use **bold** for arcane terms and code concepts
+- Use *italic* for mystical emphasis
+- Use `inline code` for incantations and code
 - Use ***bold italic*** for powerful revelations
 - Format quotes as: *"Ancient wisdom speaks..."*
-- Use bullet points (-) for listing mystical elements
+- Use bullet points (-) for listing elements
 - End with "*By the ancient arts*" 🧙‍♂️
+
+When code is requested:
+1. ALWAYS provide code examples in code blocks
+2. Use proper syntax highlighting
+3. Add mystical comments explaining the code
+4. Format code blocks as:
+```language
+# Arcane code with mystical comments
+```
 
 Remember:
 - Speak in mystical riddles
 - Reference ancient knowledge
 - Use magical metaphors
-- Create atmosphere with your words"""
+- ALWAYS include code when programming is mentioned"""
     },
     "queen": {
         "title": "Queen Eleanor",
@@ -65,47 +84,60 @@ Remember:
 
 Format your responses with:
 - Begin with "### Royal Proclamation 👑"
-- Use **bold** for decrees, titles, and proclamations
-- Use *italic* for grace and gentle wisdom
-- Use `inline code` for royal protocols
+- Use **bold** for decrees and code concepts
+- Use *italic* for grace and wisdom
+- Use `inline code` for royal protocols and code
 - Use ***bold italic*** for sovereign commands
 - Format quotes as: *"A queen's wisdom echoes..."*
-- Use bullet points (-) for listing royal matters
+- Use bullet points (-) for listing matters
 - End with "*By royal decree*" 👑
+
+When code is requested:
+1. ALWAYS provide code examples in code blocks
+2. Use proper syntax highlighting
+3. Add elegant comments explaining the code
+4. Format code blocks as:
+```language
+# Royal code with elegant comments
+```
 
 Remember:
 - Speak with grace and authority
 - Reference the kingdom's prosperity
 - Maintain royal dignity
-- Use elegant and refined language"""
+- ALWAYS include code when programming is mentioned"""
     },
     "jester": {
         "title": "Jasper the Jester",
         "description": "A witty and playful court entertainer",
         "emoji": "🃏",
-        "prompt": """You are a clever and witty court jester who MUST ALWAYS speak in rhyming couplets (AABB pattern) and include code examples when programming questions are asked.
+        "prompt": """You are a clever and witty court jester who MUST ALWAYS speak in rhyming couplets (AABB pattern).
 
 Format your responses with:
 - Begin with "### The Jester's Stage 🃏"
-- Use **bold** for punchlines and key phrases
+- Use **bold** for punchlines and code concepts
 - Use *italic* for dramatic delivery
 - Use `inline code` for programming terms
 - Use ***bold italic*** for grand reveals
 - Format quotes as: *"A jester's rhyme divine!"*
 - Use bullet points (-) for listing concepts
-- ALWAYS include code examples in a code block when programming is mentioned:
-  ```language
-  // Your code here with comments in rhyme!
-  ```
 - End with "*With bells and laughter*" 🃏
+
+When code is requested:
+1. ALWAYS provide code examples in code blocks
+2. Use proper syntax highlighting
+3. Add rhyming comments explaining the code
+4. Format code blocks as:
+```language
+# Here's a function that's quite divine,
+# Watch it work and make things shine!
+```
 
 IMPORTANT RULES:
 1. EVERY pair of lines must rhyme (AABB pattern)
 2. When showing code, add rhyming comments
-3. Example structure for code responses:
-
-Here's a program to make you smile,
-Let me show you with jesting style!"""
+3. ALWAYS include code when programming is mentioned
+4. Make the code explanation fun and playful"""
     }
 }
 
@@ -200,92 +232,140 @@ def send_message():
 
         personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
-        # Break down the prompt into smaller parts
-        system_prompt = f"""You are {personality['title']}. Keep responses concise and under 150 words.
-Format your response using these patterns:
+        # Enhanced prompt format with explicit code instructions
+        prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
+
 1. Start with: ### Title {personality['emoji']}
 2. Add a quote: *"Your quote here"*
-3. Main content with:
-   - **bold** for important terms
-   - *italic* for emphasis
-   - `code` for special terms
-   - ***bold italic*** for power
+3. Main content must use:
+   - **bold** for important terms and declarations
+   - *italic* for emphasis and special phrases
+   - `inline code` for special terminology
+   - ***bold italic*** for powerful statements
    - Bullet points (-) for lists
-4. End with: *Your signature* {personality['emoji']}
+4. When code is requested:
+   - ALWAYS provide complete, runnable code examples
+   - Use proper syntax highlighting with ```language
+   - Add detailed comments explaining the code
+   - Make sure code follows best practices
+5. End with: *Your signature* {personality['emoji']}
 
-{personality['prompt']}"""
+{personality['prompt']}
 
-        user_prompt = f"User: {message}\nResponse:"
+IMPORTANT: If the user asks about programming or code, you MUST include code examples in your response!
 
-        # First try with a very short response
+User: {message}
+Response:"""
+
+        # Set a timeout for the Cohere API call
         try:
             response = co.generate(
-                prompt=system_prompt + "\n\n" + user_prompt,
-                model='command',
-                max_tokens=150,  # Start with very short response
+                prompt=prompt,
+                model='command',  # Use stable command model instead of nightly
+                max_tokens=500,
                 temperature=0.7,
                 k=0,
                 stop_sequences=["User:", "Human:"],
                 return_likelihoods='NONE'
             )
-        except Exception as first_error:
-            app.logger.error(f"First attempt error: {str(first_error)}")
-            # Try again with even shorter response
-            try:
-                response = co.generate(
-                    prompt=system_prompt + "\n\nProvide a very brief response to: " + user_prompt,
-                    model='command',
-                    max_tokens=100,  # Even shorter fallback
-                    temperature=0.7,
-                    k=0,
-                    stop_sequences=["User:", "Human:"],
-                    return_likelihoods='NONE'
-                )
-            except Exception as second_error:
-                app.logger.error(f"Second attempt error: {str(second_error)}")
-                return jsonify({
-                    'error': '⌛ The royal court is quite busy. Please try a shorter message or try again shortly.'
-                }), 408
+        except Exception as e:
+            app.logger.error(f"Cohere API Error: {str(e)}")
+            return jsonify({
+                'error': '⌛ The royal response is taking longer than expected. Please try a shorter message.'
+            }), 408
          
         if not response or not response.generations:
             return jsonify({'error': 'No response received from the API'}), 500
         
         response_text = response.generations[0].text.strip()
         
-        # Improved formatting fixes
+        # Improved code block and formatting handling
         formatted_text = []
+        in_code_block = False
+        code_block_lines = []
+        current_language = None
+        
         lines = response_text.split('\n')
         
         for line in lines:
-            # Handle headers
+            # Handle code blocks
+            if line.strip().startswith('```'):
+                if in_code_block:
+                    # End of code block
+                    if code_block_lines:
+                        formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
+                    code_block_lines = []
+                    in_code_block = False
+                    current_language = None
+                else:
+                    # Start of code block
+                    in_code_block = True
+                    current_language = line.strip().replace('```', '').strip()
+                continue
+                
+            if in_code_block:
+                # Preserve code block content exactly as is
+                code_block_lines.append(line)
+                continue
+                
+            # Handle non-code content
             if line.strip().startswith('###'):
                 formatted_text.extend(['', line.strip(), ''])
-            # Handle quotes
             elif line.strip().startswith('*"') or line.strip().startswith('"'):
                 formatted_text.extend(['', '*"' + line.strip().strip('*"\'') + '"*', ''])
-            # Handle bullet points
             elif line.strip().startswith('-'):
                 formatted_text.extend(['', line.strip()])
-            # Handle normal text
             else:
-                # Quick formatting fixes
-                line = (line.strip()
-                    .replace(' ,', ',').replace(' .', '.')
-                    .replace(',', ', ').replace('.', '. ')
-                    .replace('  ', ' '))
+                # Preserve markdown formatting while fixing punctuation
+                line = line.strip()
+                # Fix spaces around punctuation without breaking markdown
+                line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
+                # Add spaces after punctuation if missing
+                line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
+                # Clean up any double spaces
+                line = ' '.join(line.split())
                 formatted_text.append(line)
         
-        # Join and clean up
-        response_text = '\n'.join(formatted_text).strip()
+        # Handle any remaining code block
+        if in_code_block and code_block_lines:
+            formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
         
-        # Ensure proper header and signature
-        if not response_text.startswith('###'):
+        # Join lines and clean up spacing
+        response_text = '\n'.join(formatted_text)
+        
+        # Clean up final formatting
+        response_text = (response_text
+            .replace('\n\n\n', '\n\n')
+            .strip()
+        )
+        
+        # Ensure proper header
+        if not response_text.strip().startswith('###'):
             response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
-        if not response_text.endswith('---'):
-            response_text = f"{response_text}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
+        
+        # Ensure proper signature
+        if not response_text.strip().endswith('---'):
+            response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
         
         return jsonify({'response': response_text})
         
+    except cohere.CohereError as e:
+        app.logger.error(f"Cohere API Error: {str(e)}")
+        error_message = str(e).lower()
+        
+        if 'rate_limit' in error_message:
+            return jsonify({
+                'error': '🕒 The royal court is quite busy. Please wait a moment before trying again.'
+            }), 429
+        elif 'timeout' in error_message:
+            return jsonify({
+                'error': '⌛ The royal response is taking longer than expected. Please try again.'
+            }), 408
+        else:
+            return jsonify({
+                'error': '📜 A mystical disturbance has occurred. Please try again shortly.'
+            }), 500
+
     except Exception as e:
         app.logger.error(f"Server Error: {str(e)}")
         return jsonify({
