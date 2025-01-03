@@ -229,7 +229,7 @@ Response:"""
             return_likelihoods='NONE',
             timeout=8  # Set timeout to 8 seconds to stay within Vercel's limit
         )
-        
+         
         if not response or not response.generations:
             return jsonify({'error': 'No response received from the API'}), 500
         
