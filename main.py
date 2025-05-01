@@ -2,8 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
+import cohere
 from dotenv import load_dotenv
 from datetime import timedelta
 import threading
@@ -174,10 +173,10 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 if not ADMIN_PASSWORD:
     raise ValueError("Admin password not found. Please set ADMIN_PASSWORD in the environment variables.")
 
-# Initialize Mistral client
-mistral_client = MistralClient(api_key=os.getenv('MISTRAL_API_KEY'))
-if not mistral_client:
-    raise ValueError("Mistral client initialization failed. Please check your API key.")
+# Initialize Cohere client
+co = cohere.Client(os.getenv('COHERE_API_KEY'))
+if not co:
+    raise ValueError("Cohere client initialization failed. Please check your API key.")
 
 def is_authenticated():
     return session.get('authenticated', False)
@@ -261,7 +260,7 @@ def send_message():
 
 def generate_response(message, request_id, personality):
     try:
-        system_prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
+        prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
 
 1. Start with: ### Title {personality['emoji']}
 2. Add a quote: *"Your quote here"*
@@ -280,22 +279,22 @@ def generate_response(message, request_id, personality):
 
 {personality['prompt']}
 
-IMPORTANT: Only include code examples if the user explicitly requests code or asks a direct programming question!"""
+IMPORTANT: Only include code examples if the user explicitly requests code or asks a direct programming question!
 
-        messages = [
-            ChatMessage(role="system", content=system_prompt),
-            ChatMessage(role="user", content=message)
-        ]
+User: {message}
+Response:"""
 
-        response = mistral_client.chat(
-            model="mistral-small-latest",
-            messages=messages,
+        response = co.generate(
+            prompt=prompt,
+            model='command',
             max_tokens=500,
             temperature=0.9,
+            # stop_sequences=["User:", "Human:"],
+            # return_likelihoods='NONE'
         )
 
-        if response and response.choices:
-            response_text = format_response(response.choices[0].message.content.strip(), personality)
+        if response and response.generations:
+            response_text = format_response(response.generations[0].text.strip(), personality)
             response_queue[request_id].put(({'response': response_text}, None))
         else:
             response_queue[request_id].put((None, 'No response received from the API'))

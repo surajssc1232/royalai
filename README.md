@@ -1,11 +1,11 @@
-# Royal AI Chat 👑
+# Royal Grok AI Chat 👑
 
-A elegant and sophisticated chat interface powered by Mistral AI's Small v3.1 model, featuring a royal theme and medieval English responses.
+A elegant and sophisticated chat interface powered by X.AI's Grok model, featuring a royal theme and medieval English responses.
 
 ## Features
 
 ### Core Functionality
-- Real-time chat interface with Mistral AI's Small v3.1 model
+- Real-time chat interface with X.AI's Grok model
 - Royal-themed responses in medieval English
 - Markdown formatting support
 - Password-protected access
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 3. Set up environment variables in a `.env` file:
 ```env
-MISTRAL_API_KEY=your_mistral_api_key
+XAI_API_KEY=your_xai_api_key
 ADMIN_PASSWORD=your_admin_password
 SECRET_KEY=your_secret_key
 ```
@@ -60,14 +60,14 @@ python main.py
 
 ## Environment Variables
 
-- `MISTRAL_API_KEY`: Your Mistral AI API key
+- `XAI_API_KEY`: Your X.AI API key
 - `ADMIN_PASSWORD`: Password for accessing the chat interface
 - `SECRET_KEY`: Secret key for Flask session management
 
 ## Dependencies
 
 - Flask==3.0.0
-- mistralai==0.0.13
+- openai==1.57.0
 - python-dotenv==1.0.0
 - Flask-Limiter==3.5.0
 - Additional dependencies listed in `requirements.txt`
@@ -139,7 +139,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Mistral AI for the Small v3.1 model API
+- X.AI for the Grok model API
 - Showdown.js for Markdown parsing
 - Flask framework
 - Vercel for hosting
