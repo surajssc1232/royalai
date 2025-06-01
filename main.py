@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
+import re
 from mistralai import Mistral
 from dotenv import load_dotenv
 from datetime import timedelta
@@ -260,26 +261,31 @@ def send_message():
 
 def generate_response(message, request_id, personality):
     try:
-        system_prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
+        system_prompt = f"""You are {personality['title']}, a royal court member. Follow these formatting rules EXACTLY:
 
-1. Start with: ### Title {personality['emoji']}
-2. Add a quote: *"Your quote here"*
-3. Main content must use:
-   - **bold** for important terms and declarations
-   - *italic* for emphasis and special phrases
-   - `inline code` for special terminology
-   - ***bold italic*** for powerful statements
-   - Bullet points (-) for lists
-4. When code is EXPLICITLY requested or when the user asks a direct programming question:
-   - Provide complete, runnable code examples
-   - Use proper syntax highlighting with ```language
-   - Add detailed comments explaining the code
-   - Make sure code follows best practices
-5. End with: *Your signature* {personality['emoji']}
+RESPONSE STRUCTURE:
+1. Start with: ### {personality['title']} Speaks {personality['emoji']}
+2. Add a royal quote: *"Your quote here"*
+3. Main content with proper markdown:
+   - Use **bold** for important terms, titles, and declarations
+   - Use *italic* for emphasis, poetic phrases, and special terms
+   - Use `inline code` for technical terminology only
+   - Use ***bold italic*** for powerful proclamations
+   - Use bullet points (-) for listing concepts
+   - Leave blank lines between sections for readability
+4. End with: *{personality['title']} of the Royal Court* {personality['emoji']}
 
+CODE FORMATTING (only when explicitly requested):
+- Use proper markdown code blocks with language specification
+- Add explanatory comments within code
+- Format as: ```language
+- Provide complete, working examples
+- Explain code purpose before showing it
+
+CONTENT GUIDELINES:
 {personality['prompt']}
 
-IMPORTANT: Only include code examples if the user explicitly requests code or asks a direct programming question!"""
+CRITICAL: Maintain royal character while ensuring proper markdown formatting. Every response must follow the exact structure above."""
 
         response = mistral_client.chat.complete(
             model="mistral-large-latest",
@@ -293,90 +299,108 @@ IMPORTANT: Only include code examples if the user explicitly requests code or as
                     "content": message
                 }
             ],
-            max_tokens=500,
-            temperature=0.9
+            max_tokens=800,
+            temperature=0.7
         )
 
         if response and response.choices and len(response.choices) > 0:
             response_text = format_response(response.choices[0].message.content.strip(), personality)
             response_queue[request_id].put(({'response': response_text}, None))
         else:
-            response_queue[request_id].put((None, 'No response received from the API'))
+            error_response = format_response("", personality)  # This will create a default "silent court" message
+            response_queue[request_id].put(({'response': error_response}, None))
 
     except Exception as e:
         app.logger.error(f"Background task error: {str(e)}")
-        response_queue[request_id].put((None, str(e)))
+        error_message = f"### Royal Apology {personality['emoji']}\n\n*\"The royal messenger encountered difficulties\"*\n\nPrithee, try thy request again, noble visitor.\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
+        response_queue[request_id].put(({'response': error_message}, None))
 
 def format_response(response_text, personality):
-    # Move the formatting logic to a separate function
-    formatted_text = []
-    in_code_block = False
-    code_block_lines = []
-    current_language = None
+    """Format the response text with proper markdown and royal styling"""
+    if not response_text:
+        return f"### {personality['title']} Speaks {personality['emoji']}\n\n*The royal court is temporarily silent*\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
     
+    # Split into lines for processing
     lines = response_text.split('\n')
+    formatted_lines = []
+    in_code_block = False
+    code_language = None
     
     for line in lines:
         # Handle code blocks
         if line.strip().startswith('```'):
             if in_code_block:
                 # End of code block
-                if code_block_lines:
-                    formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
-                code_block_lines = []
+                formatted_lines.append('```')
                 in_code_block = False
-                current_language = None
+                code_language = None
             else:
                 # Start of code block
                 in_code_block = True
-                current_language = line.strip().replace('```', '').strip()
+                code_language = line.strip()[3:].strip()
+                formatted_lines.append(f'```{code_language}')
             continue
-            
+        
         if in_code_block:
-            # Preserve code block content exactly as is
-            code_block_lines.append(line)
+            # Preserve code exactly as is
+            formatted_lines.append(line)
             continue
-            
-        # Handle non-code content
-        if line.strip().startswith('###'):
-            formatted_text.extend(['', line.strip(), ''])
-        elif line.strip().startswith('*"') or line.strip().startswith('"'):
-            formatted_text.extend(['', '*"' + line.strip().strip('*"\'') + '"*', ''])
-        elif line.strip().startswith('-'):
-            formatted_text.extend(['', line.strip()])
-        else:
-            # Preserve markdown formatting while fixing punctuation
-            line = line.strip()
-            # Fix spaces around punctuation without breaking markdown
-            line = line.replace(' ,', ',').replace(' .', '.').replace(' !', '!').replace(' ?', '?')
-            # Add spaces after punctuation if missing
-            line = line.replace(',', ', ').replace('.', '. ').replace('!', '! ').replace('?', '? ')
-            # Clean up any double spaces
-            line = ' '.join(line.split())
-            formatted_text.append(line)
+        
+        # Process non-code lines
+        line = line.strip()
+        if not line:
+            formatted_lines.append('')
+            continue
+        
+        # Handle headers
+        if line.startswith('###'):
+            formatted_lines.append('')
+            formatted_lines.append(line)
+            formatted_lines.append('')
+            continue
+        
+        # Handle quotes (starting with *" or just ")
+        if line.startswith('*"') and line.endswith('"*'):
+            formatted_lines.append('')
+            formatted_lines.append(line)
+            formatted_lines.append('')
+            continue
+        elif line.startswith('"') and line.endswith('"'):
+            formatted_lines.append('')
+            formatted_lines.append(f'*"{line[1:-1]}"*')
+            formatted_lines.append('')
+            continue
+        
+        # Handle bullet points
+        if line.startswith('-') or line.startswith('*'):
+            formatted_lines.append(line)
+            continue
+        
+        # Handle bold/italic formatting and clean up punctuation
+        # Fix spacing around punctuation
+        line = re.sub(r'\s+([,.!?;:])', r'\1', line)  # Remove space before punctuation
+        line = re.sub(r'([,.!?;:])(?=[A-Za-z])', r'\1 ', line)  # Add space after punctuation if followed by letter
+        line = re.sub(r'\s+', ' ', line)  # Clean up multiple spaces
+        
+        formatted_lines.append(line)
     
-    # Handle any remaining code block
-    if in_code_block and code_block_lines:
-        formatted_text.extend(['', '```' + (current_language or ''), *code_block_lines, '```', ''])
+    # Join the lines
+    formatted_text = '\n'.join(formatted_lines)
     
-    # Join lines and clean up spacing
-    response_text = '\n'.join(formatted_text)
+    # Clean up excessive newlines
+    formatted_text = re.sub(r'\n{3,}', '\n\n', formatted_text)
+    formatted_text = formatted_text.strip()
     
-    # Clean up final formatting
-    response_text = (response_text
-        .replace('\n\n\n', '\n\n')
-        .strip()
-    )
+    # Ensure proper header if missing
+    if not formatted_text.startswith('###'):
+        formatted_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{formatted_text}"
     
-    # Ensure proper header
-    if not response_text.strip().startswith('###'):
-        response_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{response_text}"
+    # Ensure proper signature if missing
+    signature = f"*{personality['title']} of the Royal Court* {personality['emoji']}"
+    if not signature in formatted_text and not formatted_text.endswith('---'):
+        formatted_text = f"{formatted_text}\n\n{signature}\n\n---"
     
-    # Ensure proper signature
-    if not response_text.strip().endswith('---'):
-        response_text = f"{response_text.strip()}\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
-    
-    return response_text
+    return formatted_text
 
 @app.route('/check_response/<request_id>', methods=['GET'])
 @limiter.exempt
