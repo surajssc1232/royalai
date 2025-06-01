@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Add showdown library for markdown parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css" id="syntax-theme">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <!-- Add common languages you want to support -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
@@ -13,6 +13,171 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
     <style>
+        /* Theme Variables */
+        :root {
+            /* Gruvbox Theme */
+            --bg-primary: #282828;
+            --bg-secondary: #3c3836;
+            --bg-tertiary: #504945;
+            --bg-chat: #282828;
+            --bg-message-bot: rgba(60, 56, 54, 0.95);
+            --bg-message-user: rgba(69, 133, 136, 0.6);
+            --bg-input: rgba(60, 56, 54, 0.8);
+            --bg-button: linear-gradient(135deg, #d79921, #b57614);
+            --bg-button-hover: linear-gradient(135deg, #b57614, #af3a03);
+            --bg-sidebar: rgba(44, 44, 44, 0.95);
+            --bg-loading: rgba(60, 56, 54, 0.95);
+            
+            --text-primary: #ebdbb2;
+            --text-secondary: #d5c4a1;
+            --text-accent: #fabd2f;
+            --text-muted: #928374;
+            --text-user: #ebdbb2;
+            --text-button: #1d2021;
+            --text-code: #fabd2f;
+            
+            --border-primary: rgba(146, 131, 116, 0.3);
+            --border-secondary: rgba(146, 131, 116, 0.5);
+            --border-accent: rgba(215, 153, 33, 0.5);
+            --border-code: rgba(102, 92, 84, 0.3);
+            
+            --shadow-primary: rgba(146, 131, 116, 0.2);
+            --shadow-button: rgba(215, 153, 33, 0.3);
+            --shadow-message: rgba(69, 133, 136, 0.3);
+            
+            --syntax-bg: #1e1e1e;
+            --syntax-border: #404040;
+            --syntax-text: #d4d4d4;
+            --code-bg: linear-gradient(135deg, rgba(74, 60, 40, 0.6), rgba(69, 56, 50, 0.6));
+            
+            --gradient-bot-message: linear-gradient(135deg, rgba(60, 56, 54, 0.95), rgba(80, 73, 69, 0.95));
+            --gradient-user-message: linear-gradient(135deg, rgba(69, 133, 136, 0.6), rgba(131, 165, 152, 0.6));
+            --gradient-border-message: linear-gradient(135deg, rgba(146, 131, 116, 0.3), rgba(189, 174, 147, 0.3));
+        }
+
+        /* Catppuccin Mocha Theme */
+        [data-theme="catppuccin-mocha"] {
+            --bg-primary: #1e1e2e;
+            --bg-secondary: #313244;
+            --bg-tertiary: #45475a;
+            --bg-chat: #1e1e2e;
+            --bg-message-bot: rgba(49, 50, 68, 0.95);
+            --bg-message-user: rgba(137, 180, 250, 0.6);
+            --bg-input: rgba(49, 50, 68, 0.8);
+            --bg-button: linear-gradient(135deg, #89b4fa, #74c7ec);
+            --bg-button-hover: linear-gradient(135deg, #74c7ec, #89dceb);
+            --bg-sidebar: rgba(30, 30, 46, 0.95);
+            --bg-loading: rgba(49, 50, 68, 0.95);
+            
+            --text-primary: #cdd6f4;
+            --text-secondary: #bac2de;
+            --text-accent: #f9e2af;
+            --text-muted: #6c7086;
+            --text-user: #cdd6f4;
+            --text-button: #11111b;
+            --text-code: #f9e2af;
+            
+            --border-primary: rgba(186, 194, 222, 0.3);
+            --border-secondary: rgba(186, 194, 222, 0.5);
+            --border-accent: rgba(137, 180, 250, 0.5);
+            --border-code: rgba(108, 112, 134, 0.3);
+            
+            --shadow-primary: rgba(137, 180, 250, 0.2);
+            --shadow-button: rgba(137, 180, 250, 0.3);
+            --shadow-message: rgba(137, 180, 250, 0.3);
+            
+            --syntax-bg: #181825;
+            --syntax-border: #45475a;
+            --syntax-text: #cdd6f4;
+            --code-bg: linear-gradient(135deg, rgba(69, 71, 90, 0.6), rgba(88, 91, 112, 0.6));
+            
+            --gradient-bot-message: linear-gradient(135deg, rgba(49, 50, 68, 0.95), rgba(69, 71, 90, 0.95));
+            --gradient-user-message: linear-gradient(135deg, rgba(137, 180, 250, 0.6), rgba(116, 199, 236, 0.6));
+            --gradient-border-message: linear-gradient(135deg, rgba(186, 194, 222, 0.3), rgba(205, 214, 244, 0.3));
+        }
+
+        /* Rose Pine Theme */
+        [data-theme="rose-pine"] {
+            --bg-primary: #191724;
+            --bg-secondary: #1f1d2e;
+            --bg-tertiary: #26233a;
+            --bg-chat: #191724;
+            --bg-message-bot: rgba(31, 29, 46, 0.95);
+            --bg-message-user: rgba(235, 111, 146, 0.6);
+            --bg-input: rgba(31, 29, 46, 0.8);
+            --bg-button: linear-gradient(135deg, #ebbcba, #f6c177);
+            --bg-button-hover: linear-gradient(135deg, #f6c177, #ea9a97);
+            --bg-sidebar: rgba(25, 23, 36, 0.95);
+            --bg-loading: rgba(31, 29, 46, 0.95);
+            
+            --text-primary: #e0def4;
+            --text-secondary: #908caa;
+            --text-accent: #f6c177;
+            --text-muted: #6e6a86;
+            --text-user: #e0def4;
+            --text-button: #191724;
+            --text-code: #f6c177;
+            
+            --border-primary: rgba(144, 140, 170, 0.3);
+            --border-secondary: rgba(144, 140, 170, 0.5);
+            --border-accent: rgba(235, 111, 146, 0.5);
+            --border-code: rgba(110, 106, 134, 0.3);
+            
+            --shadow-primary: rgba(235, 111, 146, 0.2);
+            --shadow-button: rgba(246, 193, 119, 0.3);
+            --shadow-message: rgba(235, 111, 146, 0.3);
+            
+            --syntax-bg: #16141f;
+            --syntax-border: #26233a;
+            --syntax-text: #e0def4;
+            --code-bg: linear-gradient(135deg, rgba(38, 35, 58, 0.6), rgba(49, 45, 68, 0.6));
+            
+            --gradient-bot-message: linear-gradient(135deg, rgba(31, 29, 46, 0.95), rgba(38, 35, 58, 0.95));
+            --gradient-user-message: linear-gradient(135deg, rgba(235, 111, 146, 0.6), rgba(234, 154, 151, 0.6));
+            --gradient-border-message: linear-gradient(135deg, rgba(144, 140, 170, 0.3), rgba(224, 222, 244, 0.3));
+        }
+
+        /* Rose Pine Dawn Theme */
+        [data-theme="rose-pine-dawn"] {
+            --bg-primary: #faf4ed;
+            --bg-secondary: #f2e9e1;
+            --bg-tertiary: #e8ddd4;
+            --bg-chat: #faf4ed;
+            --bg-message-bot: rgba(242, 233, 225, 0.95);
+            --bg-message-user: rgba(180, 99, 122, 0.6);
+            --bg-input: rgba(242, 233, 225, 0.8);
+            --bg-button: linear-gradient(135deg, #d7827e, #ea9d34);
+            --bg-button-hover: linear-gradient(135deg, #ea9d34, #d7827e);
+            --bg-sidebar: rgba(250, 244, 237, 0.95);
+            --bg-loading: rgba(242, 233, 225, 0.95);
+            
+            --text-primary: #575279;
+            --text-secondary: #6e6a86;
+            --text-accent: #ea9d34;
+            --text-muted: #9893a5;
+            --text-user: #575279;
+            --text-button: #faf4ed;
+            --text-code: #d7827e;
+            
+            --border-primary: rgba(87, 82, 121, 0.3);
+            --border-secondary: rgba(87, 82, 121, 0.5);
+            --border-accent: rgba(180, 99, 122, 0.5);
+            --border-code: rgba(152, 147, 165, 0.3);
+            
+            --shadow-primary: rgba(180, 99, 122, 0.2);
+            --shadow-button: rgba(234, 157, 52, 0.3);
+            --shadow-message: rgba(180, 99, 122, 0.3);
+            
+            --syntax-bg: #fffaf3;
+            --syntax-border: #e8ddd4;
+            --syntax-text: #575279;
+            --code-bg: linear-gradient(135deg, rgba(232, 221, 212, 0.6), rgba(215, 204, 200, 0.6));
+            
+            --gradient-bot-message: linear-gradient(135deg, rgba(242, 233, 225, 0.95), rgba(232, 221, 212, 0.95));
+            --gradient-user-message: linear-gradient(135deg, rgba(180, 99, 122, 0.6), rgba(215, 130, 126, 0.6));
+            --gradient-border-message: linear-gradient(135deg, rgba(87, 82, 121, 0.3), rgba(110, 106, 134, 0.3));
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -21,13 +186,14 @@
 
         body {
             font-family: 'Times New Roman', serif;
-            background: #282828;
+            background: var(--bg-primary);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             padding: 0;
             margin: 0;
             position: relative;
+            transition: background-color 0.3s ease;
         }
 
         .chat-wrapper {
@@ -58,10 +224,11 @@
             flex: 1;
             overflow-y: auto;
             padding: 30px;
-            background: #282828;
+            background: var(--bg-chat);
             display: flex;
             flex-direction: column;
             gap: 20px;
+            transition: background-color 0.3s ease;
         }
 
         .message {
@@ -89,7 +256,7 @@
             bottom: 0;
             border-radius: inherit;
             padding: 1px;
-            background: linear-gradient(135deg, rgba(146, 131, 116, 0.3), rgba(189, 174, 147, 0.3));
+            background: var(--gradient-border-message);
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask-composite: subtract;
             -webkit-mask-composite: xor;
@@ -101,13 +268,13 @@
         }
 
         .user-message {
-            background: linear-gradient(135deg, rgba(69, 133, 136, 0.6), rgba(131, 165, 152, 0.6));
+            background: var(--gradient-user-message);
             margin-left: auto;
-            border: 1px solid rgba(69, 133, 136, 0.5);
-            box-shadow: 0 8px 25px rgba(69, 133, 136, 0.3);
+            border: 1px solid var(--border-secondary);
+            box-shadow: 0 8px 25px var(--shadow-message);
             position: relative;
             align-self: flex-end;
-            color: #ebdbb2;
+            color: var(--text-user);
         }
 
         .user-message::after {
@@ -117,21 +284,21 @@
             top: 20px;
             width: 0;
             height: 0;
-            border-left: 8px solid rgba(70, 130, 180, 0.4);
+            border-left: 8px solid var(--bg-message-user);
             border-top: 8px solid transparent;
             border-bottom: 8px solid transparent;
         }
 
         .bot-message {
-            background: linear-gradient(135deg, rgba(60, 56, 54, 0.95), rgba(80, 73, 69, 0.95));
+            background: var(--gradient-bot-message);
             margin-right: auto;
-            border: 1px solid rgba(146, 131, 116, 0.3);
+            border: 1px solid var(--border-primary);
             width: auto;
             max-width: 70%;
-            box-shadow: 0 8px 25px rgba(146, 131, 116, 0.2);
+            box-shadow: 0 8px 25px var(--shadow-primary);
             position: relative;
             align-self: flex-start;
-            color: #ebdbb2;
+            color: var(--text-primary);
         }
 
         .bot-message::after {
@@ -141,26 +308,26 @@
             top: 20px;
             width: 0;
             height: 0;
-            border-right: 8px solid rgba(69, 56, 50, 0.95);
+            border-right: 8px solid var(--bg-message-bot);
             border-top: 8px solid transparent;
             border-bottom: 8px solid transparent;
         }
 
         .bot-message h3 {
-            color: #fabd2f;
-            border-bottom: 1px solid rgba(250, 189, 47, 0.4);
+            color: var(--text-accent);
+            border-bottom: 1px solid var(--border-accent);
             padding-bottom: 5px;
             margin-bottom: 8px;
             font-size: 1.1em;
         }
 
         .bot-message blockquote {
-            border-left: 3px solid #b8bb26;
+            border-left: 3px solid var(--text-accent);
             margin: 8px 0;
             padding: 8px 12px;
-            background: linear-gradient(135deg, rgba(60, 56, 54, 0.8), rgba(50, 48, 47, 0.8));
+            background: var(--bg-secondary);
             font-style: italic;
-            color: #d5c4a1;
+            color: var(--text-secondary);
             backdrop-filter: blur(5px);
         }
 
@@ -169,26 +336,26 @@
             word-wrap: break-word;
             overflow-x: auto;
             max-width: 100%;
-            background: linear-gradient(135deg, rgba(29, 32, 33, 0.9), rgba(40, 40, 40, 0.9));
+            background: var(--syntax-bg);
             padding: 10px;
             border-radius: 5px;
             margin: 8px 0;
-            border: 1px solid rgba(102, 92, 84, 0.3);
+            border: 1px solid var(--border-code);
             backdrop-filter: blur(5px);
         }
 
         .bot-message code {
-            background: linear-gradient(135deg, rgba(74, 60, 40, 0.6), rgba(69, 56, 50, 0.6));
+            background: var(--code-bg);
             padding: 2px 4px;
             border-radius: 3px;
             font-family: monospace;
-            color: #fabd2f;
+            color: var(--text-code);
             word-break: break-word;
             white-space: pre-wrap;
             font-size: 0.9em;
             max-width: 100%;
             display: inline-block;
-            border: 1px solid rgba(250, 189, 47, 0.2);
+            border: 1px solid var(--border-accent);
         }
 
         .bot-message ul, .bot-message ol {
@@ -208,9 +375,9 @@
 
         #input-container {
             padding: 25px 30px;
-            background: rgba(44, 44, 44, 0.95);
+            background: var(--bg-sidebar);
             backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(146, 131, 116, 0.3);
+            border-top: 1px solid var(--border-primary);
             border-radius: 0;
         }
 
@@ -224,26 +391,26 @@
         #user-input {
             flex: 1;
             padding: 15px 20px;
-            border: 1px solid rgba(146, 131, 116, 0.3);
+            border: 1px solid var(--border-primary);
             border-radius: 25px;
             font-family: 'Times New Roman', serif;
             font-size: 16px;
-            background: rgba(60, 56, 54, 0.8);
+            background: var(--bg-input);
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            color: #ebdbb2;
+            box-shadow: 0 2px 10px var(--shadow-primary);
+            color: var(--text-primary);
         }
 
         #user-input::placeholder {
-            color: rgba(235, 219, 178, 0.6);
+            color: var(--text-muted);
         }
 
         #user-input:focus {
             outline: none;
-            border-color: rgba(215, 153, 33, 0.5);
-            box-shadow: 0 0 0 2px rgba(215, 153, 33, 0.2), 0 4px 15px rgba(0, 0, 0, 0.2);
-            background: rgba(60, 56, 54, 0.9);
+            border-color: var(--border-accent);
+            box-shadow: 0 0 0 2px var(--shadow-button), 0 4px 15px var(--shadow-primary);
+            background: var(--bg-secondary);
         }
 
         .button-group {
@@ -296,9 +463,9 @@
         /* Enhanced Loading Animation */
         .loading-container {
             display: none;
-            background: linear-gradient(135deg, rgba(60, 56, 54, 0.95), rgba(80, 73, 69, 0.95));
+            background: var(--bg-loading);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(146, 131, 116, 0.3);
+            border: 1px solid var(--border-primary);
             border-radius: 18px;
             padding: 20px 25px;
             margin: 20px 0;
@@ -309,7 +476,7 @@
             margin-left: 0;
             margin-right: auto;
             animation: slideInFromLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 30px rgba(146, 131, 116, 0.3);
+            box-shadow: 0 8px 30px var(--shadow-primary);
             position: relative;
             overflow: hidden;
             align-self: flex-start;
@@ -323,7 +490,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(146, 131, 116, 0.2), transparent);
+            background: linear-gradient(90deg, transparent, var(--border-secondary), transparent);
             animation: shimmer 2s infinite;
         }
 
@@ -352,7 +519,7 @@
         }
 
         .loading-text {
-            color: #ebdbb2;
+            color: var(--text-primary);
             font-family: 'Times New Roman', serif;
             font-style: italic;
             font-size: 1.1em;
@@ -728,10 +895,10 @@
         }
 
         .action-btn {
-            background: linear-gradient(135deg, rgba(60, 56, 54, 0.8), rgba(80, 73, 69, 0.8));
+            background: var(--gradient-bot-message);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(146, 131, 116, 0.3);
-            color: #ebdbb2;
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
             padding: 8px 12px;
             font-size: 0.9em;
             cursor: pointer;
@@ -771,11 +938,136 @@
 
 
 
-        /* Modern Sidebar for Personality Selector */
-        .sidebar-container {
+        /* Theme Selector - Center Modal */
+        .theme-selector-overlay {
             position: fixed;
             top: 0;
             left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .theme-selector-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .theme-selector {
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            border-radius: 15px;
+            box-shadow: 0 20px 60px var(--shadow-primary);
+            border: 1px solid var(--border-primary);
+            padding: 20px;
+            max-width: 300px;
+            width: 90%;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .theme-selector-overlay.open .theme-selector {
+            transform: scale(1) translateY(0);
+        }
+
+        .theme-selector h3 {
+            font-size: 1.1em;
+            color: var(--text-accent);
+            margin: 0 0 15px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            margin-bottom: 5px;
+            border: 1px solid transparent;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-accent);
+        }
+
+        .theme-option.active {
+            background: var(--bg-button);
+            color: var(--text-button);
+            border-color: var(--border-accent);
+        }
+
+        .theme-option.active .theme-desc {
+            color: var(--text-button);
+            opacity: 0.8;
+        }
+
+        .theme-option.active .theme-title {
+            color: var(--text-button);
+        }
+
+        .theme-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+
+        .theme-info {
+            flex: 1;
+        }
+
+        .theme-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 0.95em;
+            color: var(--text-primary);
+        }
+
+        .theme-desc {
+            font-size: 0.75em;
+            opacity: 0.7;
+            color: var(--text-secondary);
+        }
+
+        /* Theme preview colors */
+        .gruvbox-preview {
+            background: linear-gradient(135deg, #d79921, #b57614);
+        }
+
+        .catppuccin-preview {
+            background: linear-gradient(135deg, #89b4fa, #74c7ec);
+        }
+
+        .rose-pine-preview {
+            background: linear-gradient(135deg, #ebbcba, #f6c177);
+        }
+
+        .rose-pine-dawn-preview {
+            background: linear-gradient(135deg, #d7827e, #ea9d34);
+        }
+
+        /* Modern Sidebar for Personality Selector - Right Side */
+        .sidebar-container {
+            position: fixed;
+            top: 0;
+            right: 0;
             height: 100vh;
             width: 80px;
             z-index: 1000;
@@ -785,7 +1077,7 @@
         .sidebar-trigger {
             position: absolute;
             top: 0;
-            left: 0;
+            right: 0;
             width: 80px;
             height: 100vh;
             background: transparent;
@@ -796,14 +1088,14 @@
         .personality-selector {
             position: absolute;
             top: 50%;
-            left: 0;
-            transform: translateY(-50%) translateX(-95%);
+            right: 0;
+            transform: translateY(-50%) translateX(95%);
             width: 320px;
-            background: rgba(44, 44, 44, 0.95);
+            background: var(--bg-sidebar);
             backdrop-filter: blur(20px);
-            border-radius: 0 25px 25px 0;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(146, 131, 116, 0.3);
+            border-radius: 25px 0 0 25px;
+            box-shadow: -10px 0 40px var(--shadow-primary);
+            border: 1px solid var(--border-primary);
             padding: 25px 20px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: all;
@@ -816,7 +1108,7 @@
 
         .personality-selector h3 {
             font-size: 1.2em;
-            color: #fabd2f;
+            color: var(--text-accent);
             margin: 0 0 20px 0;
             text-align: center;
             font-weight: 600;
@@ -831,7 +1123,7 @@
             transform: translateX(-50%);
             width: 40px;
             height: 2px;
-            background: linear-gradient(to right, #fabd2f, #d79921);
+            background: linear-gradient(to right, var(--text-accent), var(--border-accent));
             border-radius: 1px;
         }
 
@@ -865,26 +1157,27 @@
         }
 
         .personality-option:hover {
-            background: linear-gradient(135deg, rgba(168, 153, 132, 0.2), rgba(189, 174, 147, 0.25));
-            transform: translateX(8px) scale(1.02);
-            border-color: rgba(168, 153, 132, 0.4);
-            box-shadow: 0 8px 25px rgba(168, 153, 132, 0.3);
+            background: var(--bg-tertiary);
+            transform: translateX(-8px) scale(1.02);
+            border-color: var(--border-accent);
+            box-shadow: -8px 0 25px var(--shadow-button);
         }
 
         .personality-option.active {
-            background: linear-gradient(135deg, rgba(222, 184, 135, 0.3), rgba(244, 228, 193, 0.2));
-            color: #deb887;
-            transform: translateX(8px) scale(1.02);
-            border-color: #deb887;
-            box-shadow: 0 10px 30px rgba(222, 184, 135, 0.4);
+            background: var(--bg-button);
+            color: var(--text-button);
+            transform: translateX(-8px) scale(1.02);
+            border-color: var(--border-accent);
+            box-shadow: -10px 0 30px var(--shadow-button);
         }
 
         .personality-option.active .personality-desc {
-            color: rgba(222, 184, 135, 0.8);
+            color: var(--text-button);
+            opacity: 0.8;
         }
 
         .personality-option.active .personality-title {
-            color: #deb887;
+            color: var(--text-button);
         }
 
         .personality-emoji {
@@ -894,21 +1187,21 @@
             justify-content: center;
             width: 50px;
             height: 50px;
-            background: rgba(68, 68, 68, 0.8);
+            background: var(--bg-secondary);
             border-radius: 50%;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px var(--shadow-primary);
         }
 
         .personality-option:hover .personality-emoji {
             transform: scale(1.2) rotate(10deg);
-            background: rgba(68, 68, 68, 1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            background: var(--bg-tertiary);
+            box-shadow: 0 6px 20px var(--shadow-primary);
         }
 
         .personality-option.active .personality-emoji {
-            background: rgba(68, 68, 68, 0.9);
-            box-shadow: 0 6px 20px rgba(222, 184, 135, 0.4);
+            background: var(--bg-tertiary);
+            box-shadow: 0 6px 20px var(--shadow-button);
         }
 
         .personality-info {
@@ -920,7 +1213,7 @@
             margin-bottom: 4px;
             font-size: 1.1em;
             transition: all 0.3s ease;
-            color: #e8e8e8;
+            color: var(--text-primary);
         }
 
         .personality-desc {
@@ -928,7 +1221,7 @@
             opacity: 0.8;
             transition: all 0.3s ease;
             line-height: 1.3;
-            color: #c0c0c0;
+            color: var(--text-secondary);
         }
 
         .personality-option:hover .personality-title {
@@ -1005,19 +1298,19 @@
 
         /* Add these to your existing styles */
         .bot-message pre {
-            background-color: #1e1e1e;
+            background-color: var(--syntax-bg);
             border-radius: 8px;
             margin: 10px 0;
             padding: 12px;
             overflow-x: auto;
-            border: 1px solid #404040;
+            border: 1px solid var(--syntax-border);
         }
 
         .bot-message code {
             font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 0.9em;
             line-height: 1.4;
-            color: #d4d4d4;
+            color: var(--syntax-text);
             padding-left: 16px;  /* Add indentation for code blocks */
         }
 
@@ -1039,15 +1332,49 @@
 
         /* Ensure inline code is also visible */
         .bot-message p code {
-            background-color: #1e1e1e !important;
-            color: #d4d4d4 !important;
+            background-color: var(--syntax-bg) !important;
+            color: var(--syntax-text) !important;
             padding: 2px 6px;
             border-radius: 4px;
-            border: 1px solid #404040;
+            border: 1px solid var(--syntax-border);
         }
     </style>
 </head>
 <body>
+    <!-- Theme Selector Modal Overlay -->
+    <div class="theme-selector-overlay" id="theme-selector-overlay">
+        <div class="theme-selector">
+            <h3>Choose Your Theme</h3>
+            <div class="theme-option active" data-theme="gruvbox">
+                <div class="theme-preview gruvbox-preview">🏮</div>
+                <div class="theme-info">
+                    <div class="theme-title">Gruvbox</div>
+                    <div class="theme-desc">Warm retro terminal vibes</div>
+                </div>
+            </div>
+            <div class="theme-option" data-theme="catppuccin-mocha">
+                <div class="theme-preview catppuccin-preview">🌙</div>
+                <div class="theme-info">
+                    <div class="theme-title">Catppuccin Mocha</div>
+                    <div class="theme-desc">Soothing pastel dark theme</div>
+                </div>
+            </div>
+            <div class="theme-option" data-theme="rose-pine">
+                <div class="theme-preview rose-pine-preview">🌹</div>
+                <div class="theme-info">
+                    <div class="theme-title">Rose Pine</div>
+                    <div class="theme-desc">Natural pine forest ambiance</div>
+                </div>
+            </div>
+            <div class="theme-option" data-theme="rose-pine-dawn">
+                <div class="theme-preview rose-pine-dawn-preview">🌅</div>
+                <div class="theme-info">
+                    <div class="theme-title">Rose Pine Dawn</div>
+                    <div class="theme-desc">Warm morning light theme</div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="sidebar-container">
         <div class="sidebar-trigger"></div>
         <div class="personality-selector">
@@ -1097,6 +1424,102 @@
         </div>
     </div>
     <script>
+        // Theme management
+        let currentTheme = localStorage.getItem('royalai-theme') || 'gruvbox';
+        let themeMenuOpen = false;
+
+        // Initialize theme on page load
+        function initializeTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateActiveThemeOption();
+            updateSyntaxHighlighting();
+        }
+
+        // Toggle theme selector menu
+        function toggleThemeSelector() {
+            const themeOverlay = document.getElementById('theme-selector-overlay');
+            themeMenuOpen = !themeMenuOpen;
+            
+            if (themeMenuOpen) {
+                themeOverlay.classList.add('open');
+            } else {
+                themeOverlay.classList.remove('open');
+            }
+        }
+
+        // Switch to a specific theme
+        function switchTheme(themeName) {
+            currentTheme = themeName;
+            document.documentElement.setAttribute('data-theme', themeName);
+            localStorage.setItem('royalai-theme', themeName);
+            updateActiveThemeOption();
+            updateSyntaxHighlighting();
+            
+            // Close theme selector after selection
+            toggleThemeSelector();
+        }
+
+        // Update active theme option in UI
+        function updateActiveThemeOption() {
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach(option => {
+                if (option.dataset.theme === currentTheme) {
+                    option.classList.add('active');
+                } else {
+                    option.classList.remove('active');
+                }
+            });
+        }
+
+        // Update syntax highlighting theme
+        function updateSyntaxHighlighting() {
+            const syntaxThemeLink = document.getElementById('syntax-theme');
+            const themeMap = {
+                'gruvbox': 'base16/gruvbox-dark-hard',
+                'catppuccin-mocha': 'base16/material-darker',
+                'rose-pine': 'base16/onedark',
+                'rose-pine-dawn': 'base16/one-light'
+            };
+            
+            const themePath = themeMap[currentTheme] || 'base16/gruvbox-dark-hard';
+            syntaxThemeLink.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${themePath}.min.css`;
+        }
+
+        // Close theme selector when clicking outside
+        document.addEventListener('click', function(event) {
+            const themeOverlay = document.getElementById('theme-selector-overlay');
+            const themeSelector = themeOverlay.querySelector('.theme-selector');
+            
+            if (themeMenuOpen && !themeSelector.contains(event.target)) {
+                toggleThemeSelector();
+            }
+        });
+
+        // Add keyboard shortcut for Alt+T to open theme selector
+        document.addEventListener('keydown', function(event) {
+            if (event.altKey && event.key === 't') {
+                event.preventDefault(); // Prevent browser's default Alt+T behavior
+                toggleThemeSelector();
+            }
+            
+            // Close theme selector with Escape key
+            if (event.key === 'Escape' && themeMenuOpen) {
+                toggleThemeSelector();
+            }
+        });
+
+        // Add event listeners to theme options
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+            
+            const themeOptions = document.querySelectorAll('.theme-option');
+            themeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    switchTheme(this.dataset.theme);
+                });
+            });
+        });
+
         // Initialize showdown converter with all features enabled
         const converter = new showdown.Converter({
             tables: true,
