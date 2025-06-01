@@ -1,5 +1,5 @@
 Flask==3.0.0
-cohere==4.37
+mistralai==1.0.1
 python-dotenv==1.0.0
 Flask-Limiter==3.5.0
 Werkzeug==3.0.1
@@ -11,5 +11,5 @@ certifi==2023.11.17
 charset-normalizer==3.3.2
 idna==3.4
 urllib3==2.1.0
-httpx==0.25.2
+httpx>=0.27.0,<0.28.0
 limits==3.6.0

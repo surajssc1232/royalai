@@ -865,14 +865,14 @@
                 <div class="personality-desc">Noble knight of the round table</div>
             </div>
         </div>
-        <div class="personality-option" data-personality="wizard">
+        <div class="personality-option" data-personality="merlin">
             <span class="personality-emoji">🧙‍♂️</span>
             <div class="personality-info">
                 <div class="personality-title">Merlin the Wise</div>
                 <div class="personality-desc">Mysterious court wizard</div>
             </div>
         </div>
-        <div class="personality-option" data-personality="queen">
+        <div class="personality-option" data-personality="eleanor">
             <span class="personality-emoji">👑</span>
             <div class="personality-info">
                 <div class="personality-title">Queen Eleanor</div>
@@ -1066,7 +1066,7 @@
         }
 
         async function pollForResponse(requestId) {
-            const maxAttempts = 60; // 30 seconds (500ms intervals)
+            const maxAttempts = 30; // 30 seconds (1000ms intervals)
             let attempts = 0;
 
             while (attempts < maxAttempts) {
@@ -1085,7 +1085,7 @@
                     }
 
                     // Still processing, wait and try again
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     attempts++;
                 } catch (error) {
                     console.error('Polling error:', error);

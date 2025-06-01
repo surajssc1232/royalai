@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
-import cohere
+from mistralai import Mistral
 from dotenv import load_dotenv
 from datetime import timedelta
 import threading
@@ -165,7 +165,7 @@ load_dotenv()
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["50 per hour"],
+    default_limits=["100 per hour"],
     storage_uri="memory://"
 )
 
@@ -173,10 +173,10 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 if not ADMIN_PASSWORD:
     raise ValueError("Admin password not found. Please set ADMIN_PASSWORD in the environment variables.")
 
-# Initialize Cohere client
-co = cohere.Client(os.getenv('COHERE_API_KEY'))
-if not co:
-    raise ValueError("Cohere client initialization failed. Please check your API key.")
+# Initialize Mistral client
+mistral_client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
+if not os.getenv('MISTRAL_API_KEY'):
+    raise ValueError("Mistral API key not found. Please set MISTRAL_API_KEY in the environment variables.")
 
 def is_authenticated():
     return session.get('authenticated', False)
@@ -229,7 +229,7 @@ def select_personality():
     })
 
 @app.route('/send_message', methods=['POST'])
-@limiter.limit("50 per hour")
+@limiter.limit("100 per hour")
 def send_message():
     if not is_authenticated():
         return jsonify({'error': 'Unauthorized'}), 401
@@ -260,7 +260,7 @@ def send_message():
 
 def generate_response(message, request_id, personality):
     try:
-        prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
+        system_prompt = f"""You are {personality['title']}. Format your response using these exact patterns:
 
 1. Start with: ### Title {personality['emoji']}
 2. Add a quote: *"Your quote here"*
@@ -279,22 +279,26 @@ def generate_response(message, request_id, personality):
 
 {personality['prompt']}
 
-IMPORTANT: Only include code examples if the user explicitly requests code or asks a direct programming question!
+IMPORTANT: Only include code examples if the user explicitly requests code or asks a direct programming question!"""
 
-User: {message}
-Response:"""
-
-        response = co.generate(
-            prompt=prompt,
-            model='command',
+        response = mistral_client.chat.complete(
+            model="mistral-large-latest",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user", 
+                    "content": message
+                }
+            ],
             max_tokens=500,
-            temperature=0.9,
-            # stop_sequences=["User:", "Human:"],
-            # return_likelihoods='NONE'
+            temperature=0.9
         )
 
-        if response and response.generations:
-            response_text = format_response(response.generations[0].text.strip(), personality)
+        if response and response.choices and len(response.choices) > 0:
+            response_text = format_response(response.choices[0].message.content.strip(), personality)
             response_queue[request_id].put(({'response': response_text}, None))
         else:
             response_queue[request_id].put((None, 'No response received from the API'))
@@ -375,6 +379,7 @@ def format_response(response_text, personality):
     return response_text
 
 @app.route('/check_response/<request_id>', methods=['GET'])
+@limiter.exempt
 def check_response(request_id):
     if request_id not in response_queue:
         return jsonify({'error': 'Invalid request ID'}), 404
