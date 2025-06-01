@@ -1151,7 +1151,7 @@
                     ${htmlContent}
                     <div class="message-footer">
                         <div class="message-actions">
-                            <button class="action-btn" onclick="copyMessage(this)" title="Copy Message">📋 Copy</button>
+                            <button class="action-btn" onclick="copyMessage(this)" title="Copy Screenshot to Clipboard">📸 Copy Screenshot</button>
                         </div>
                         <div class="message-time">${timestamp}</div>
                     </div>
@@ -1438,13 +1438,107 @@
         });
 
         // Message Actions
-        function copyMessage(button) {
-            const messageContent = button.closest('.message').querySelector(':not(.message-footer)').textContent;
-            navigator.clipboard.writeText(messageContent).then(() => {
-                const originalText = button.innerHTML;
-                button.innerHTML = '✓ Copied';
-                setTimeout(() => button.innerHTML = originalText, 2000);
-            });
+        async function copyMessage(button) {
+            const messageElement = button.closest('.message');
+            const originalText = button.innerHTML;
+            
+            try {
+                button.innerHTML = '📸 Capturing...';
+                button.disabled = true;
+                
+                // Import html2canvas dynamically
+                if (!window.html2canvas) {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+                    script.onload = () => captureAndCopy();
+                    document.head.appendChild(script);
+                } else {
+                    await captureAndCopy();
+                }
+                
+                async function captureAndCopy() {
+                    try {
+                        // Temporarily hide the message actions for cleaner screenshot
+                        const messageActions = messageElement.querySelector('.message-actions');
+                        if (messageActions) {
+                            messageActions.style.display = 'none';
+                        }
+                        
+                        // Create canvas from message element
+                        const canvas = await html2canvas(messageElement, {
+                            backgroundColor: null,
+                            scale: 2, // Higher quality
+                            useCORS: true,
+                            allowTaint: true,
+                            scrollX: 0,
+                            scrollY: 0,
+                            width: messageElement.offsetWidth,
+                            height: messageElement.offsetHeight
+                        });
+                        
+                        // Show message actions again
+                        if (messageActions) {
+                            messageActions.style.display = '';
+                        }
+                        
+                        // Convert canvas to blob
+                        canvas.toBlob(async (blob) => {
+                            try {
+                                // Copy image to clipboard
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({
+                                        'image/png': blob
+                                    })
+                                ]);
+                                
+                                button.innerHTML = '✓ Screenshot Copied!';
+                                setTimeout(() => {
+                                    button.innerHTML = originalText;
+                                    button.disabled = false;
+                                }, 2000);
+                            } catch (clipboardError) {
+                                console.error('Clipboard error:', clipboardError);
+                                // Fallback: download the image
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `royal-ai-response-${Date.now()}.png`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                
+                                button.innerHTML = '📥 Downloaded';
+                                setTimeout(() => {
+                                    button.innerHTML = originalText;
+                                    button.disabled = false;
+                                }, 2000);
+                            }
+                        }, 'image/png');
+                        
+                    } catch (error) {
+                        console.error('Screenshot error:', error);
+                        
+                        // Show message actions again in case of error
+                        const messageActions = messageElement.querySelector('.message-actions');
+                        if (messageActions) {
+                            messageActions.style.display = '';
+                        }
+                        
+                        button.innerHTML = '❌ Failed';
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.disabled = false;
+                        }, 2000);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Copy message error:', error);
+                button.innerHTML = '❌ Failed';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+            }
         }
 
         // Personality Selection
