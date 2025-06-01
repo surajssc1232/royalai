@@ -1084,7 +1084,7 @@
     </div>
     <div class="chat-wrapper">
         <div id="welcome-message" class="welcome-message">
-            ✨ Hello traveller ✨
+            Hello traveller 
         </div>
         <div id="chat-container"></div>
         <div id="input-container">
@@ -1092,7 +1092,6 @@
                 <input type="text" id="user-input" placeholder="Address thy query to the Royal AI...">
                 <div class="button-group">
                     <button onclick="sendMessage()" id="sendButton">Send</button>
-                    <button onclick="logout()" id="logoutButton">Logout</button>
                 </div>
             </div>
         </div>
@@ -1125,10 +1124,6 @@
             document.getElementById('sendButton').disabled = false;
             document.getElementById('user-input').disabled = false;
             document.getElementById('user-input').focus();
-        }
-
-        function logout() {
-            window.location.href = '/logout';
         }
 
         function addMessage(message, isUser) {
