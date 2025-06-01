@@ -657,10 +657,10 @@
             left: 0;
             transform: translateY(-50%) translateX(-100%);
             width: 320px;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(44, 44, 44, 0.95);
             backdrop-filter: blur(20px);
             border-radius: 0 25px 25px 0;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(222, 184, 135, 0.3);
             padding: 25px 20px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -700,7 +700,7 @@
 
         .personality-selector h3 {
             font-size: 1.2em;
-            color: #4a3c28;
+            color: #deb887;
             margin: 0 0 20px 0;
             text-align: center;
             font-weight: 600;
@@ -749,22 +749,26 @@
         }
 
         .personality-option:hover {
-            background: linear-gradient(135deg, rgba(222, 184, 135, 0.1), rgba(244, 228, 193, 0.15));
+            background: linear-gradient(135deg, rgba(222, 184, 135, 0.2), rgba(244, 228, 193, 0.25));
             transform: translateX(8px) scale(1.02);
-            border-color: rgba(222, 184, 135, 0.3);
-            box-shadow: 0 8px 25px rgba(222, 184, 135, 0.2);
+            border-color: rgba(222, 184, 135, 0.4);
+            box-shadow: 0 8px 25px rgba(222, 184, 135, 0.3);
         }
 
         .personality-option.active {
-            background: linear-gradient(135deg, #deb887, #f4e4c1);
-            color: white;
+            background: linear-gradient(135deg, rgba(222, 184, 135, 0.3), rgba(244, 228, 193, 0.2));
+            color: #deb887;
             transform: translateX(8px) scale(1.02);
             border-color: #deb887;
             box-shadow: 0 10px 30px rgba(222, 184, 135, 0.4);
         }
 
         .personality-option.active .personality-desc {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(222, 184, 135, 0.8);
+        }
+
+        .personality-option.active .personality-title {
+            color: #deb887;
         }
 
         .personality-emoji {
@@ -774,20 +778,20 @@
             justify-content: center;
             width: 50px;
             height: 50px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(68, 68, 68, 0.8);
             border-radius: 50%;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .personality-option:hover .personality-emoji {
             transform: scale(1.2) rotate(10deg);
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            background: rgba(68, 68, 68, 1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
         }
 
         .personality-option.active .personality-emoji {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(68, 68, 68, 0.9);
             box-shadow: 0 6px 20px rgba(222, 184, 135, 0.4);
         }
 
@@ -800,6 +804,7 @@
             margin-bottom: 4px;
             font-size: 1.1em;
             transition: all 0.3s ease;
+            color: #e8e8e8;
         }
 
         .personality-desc {
@@ -807,6 +812,7 @@
             opacity: 0.8;
             transition: all 0.3s ease;
             line-height: 1.3;
+            color: #c0c0c0;
         }
 
         .personality-option:hover .personality-title {
@@ -835,7 +841,7 @@
                 transform: none;
                 width: calc(100% - 20px);
                 max-width: none;
-                background: rgba(255, 255, 255, 0.95);
+                background: rgba(44, 44, 44, 0.95);
                 margin: 10px auto;
                 border-radius: 15px;
                 padding: 20px 15px;
