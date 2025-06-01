@@ -301,13 +301,19 @@
             border: 1px solid rgba(222, 184, 135, 0.3);
             border-radius: 18px;
             padding: 20px 25px;
-            margin: 15px 0;
-            max-width: 350px;
-            margin-left: 5%;
+            margin: 20px 0;
+            margin-bottom: 0;
+            min-width: 280px;
+            max-width: 400px;
+            width: auto;
+            margin-left: 0;
+            margin-right: auto;
             animation: slideInFromLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 8px 30px rgba(222, 184, 135, 0.3);
             position: relative;
             overflow: hidden;
+            align-self: flex-start;
+            flex-shrink: 0;
         }
 
         .loading-container::before {
@@ -319,6 +325,18 @@
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(222, 184, 135, 0.2), transparent);
             animation: shimmer 2s infinite;
+        }
+
+        .loading-container::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 20px;
+            width: 0;
+            height: 0;
+            border-right: 8px solid rgba(69, 56, 50, 0.95);
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
         }
 
         @keyframes shimmer {
@@ -454,6 +472,14 @@
                 font-size: 13px;
                 padding: 2px 4px;
             }
+
+            .loading-container {
+                min-width: 250px;
+                max-width: 85%;
+                margin-left: 0;
+                margin-right: auto;
+                padding: 16px 20px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -509,6 +535,18 @@
 
             .bot-message p {
                 margin: 6px 0;
+            }
+
+            .loading-container {
+                min-width: 220px;
+                max-width: 90%;
+                margin-left: 0;
+                margin-right: auto;
+                padding: 14px 18px;
+            }
+
+            .loading-text {
+                font-size: 1em;
             }
         }
 
@@ -630,6 +668,46 @@
                 padding: 0 10px;
                 max-width: 95%;
             }
+        }
+
+        /* Connection Status Indicator */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .connection-status.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .connection-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .connection-status.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .status-icon {
+            font-size: 1.1em;
+        }
+
+        .status-message {
+            flex: 1;
         }
 
 
@@ -1121,6 +1199,12 @@
             const message = userInput.value.trim();
             if (message === '') return;
 
+            // Prevent double-sending by checking if already processing
+            if (userInput.disabled) {
+                console.log('Message already being processed, ignoring duplicate send');
+                return;
+            }
+
             // Hide welcome message on first query
             const welcomeMessage = document.getElementById('welcome-message');
             if (welcomeMessage) {
@@ -1136,6 +1220,7 @@
 
             // Show loading animation
             const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'current-loading';
             loadingDiv.className = 'loading-container';
             loadingDiv.innerHTML = `
                 <div class="loading-content">
@@ -1153,7 +1238,17 @@
             userInput.disabled = true;
             document.getElementById('sendButton').disabled = true;
 
+            let timeoutId = null;
+            const REQUEST_TIMEOUT = 45000; // 45 seconds timeout
+
             try {
+                console.log('Sending message:', message);
+                
+                // Set up timeout for the entire request
+                timeoutId = setTimeout(() => {
+                    throw new Error('Request timeout - server took too long to respond');
+                }, REQUEST_TIMEOUT);
+
                 const response = await fetch('/send_message', {
                     method: 'POST',
                     headers: {
@@ -1162,24 +1257,59 @@
                     body: JSON.stringify({ message: message })
                 });
 
-                if (response.status === 401) {
-                    window.location.href = '/';
-                    return;
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        addMessage('> 🔒 **Session Expired**: Your royal session has expired. Redirecting to login...', false);
+                        setTimeout(() => window.location.href = '/', 2000);
+                        return;
+                    } else if (response.status === 429) {
+                        addMessage('> ⏳ **Rate Limited**: Too many requests. Please wait a moment before sending another message.', false);
+                        return;
+                    } else {
+                        throw new Error(`Server responded with status ${response.status}`);
+                    }
                 }
 
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 if (data.error) {
                     addMessage(`> 📜 **Royal Notice**: ${data.error}`, false);
                 } else if (data.request_id) {
                     // Start polling for response
+                    clearTimeout(timeoutId);
                     await pollForResponse(data.request_id);
+                } else {
+                    throw new Error('Invalid response format from server');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
+                console.error('Send message error:', error);
+                
+                if (error.message.includes('timeout')) {
+                    addMessage('> ⌛ **Timeout**: The royal court is taking longer than usual. Please try again.', false);
+                    showConnectionStatus('error', 'Request timed out - Click here to retry');
+                } else if (error.message.includes('Failed to fetch')) {
+                    addMessage('> 🌐 **Connection Error**: Unable to reach the royal servers. Please check your internet connection and try again.', false);
+                    showConnectionStatus('error', 'Connection failed - Check your internet connection');
+                } else {
+                    addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
+                    showConnectionStatus('error', 'Something went wrong - Please try again');
+                }
+                
+                // Store the failed message for potential retry
+                window.lastFailedMessage = message;
             } finally {
-                loadingDiv.remove();
+                if (timeoutId) clearTimeout(timeoutId);
+                
+                // Clean up loading animation
+                const currentLoading = document.getElementById('current-loading');
+                if (currentLoading) {
+                    currentLoading.remove();
+                }
+                
+                // Re-enable input
                 userInput.disabled = false;
                 document.getElementById('sendButton').disabled = false;
                 userInput.focus();
@@ -1187,20 +1317,42 @@
         }
 
         async function pollForResponse(requestId) {
-            const maxAttempts = 30; // 30 seconds (1000ms intervals)
+            const maxAttempts = 45; // 45 seconds (1000ms intervals)
             let attempts = 0;
+            let consecutiveErrors = 0;
+            const maxConsecutiveErrors = 3;
+
+            console.log('Starting to poll for response with ID:', requestId);
 
             while (attempts < maxAttempts) {
                 try {
-                    const response = await fetch(`/check_response/${requestId}`);
+                    console.log(`Polling attempt ${attempts + 1}/${maxAttempts}`);
+                    
+                    const response = await fetch(`/check_response/${requestId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Polling request failed with status ${response.status}`);
+                    }
+
                     const data = await response.json();
+                    console.log('Polling response:', data);
+
+                    // Reset consecutive errors on successful request
+                    consecutiveErrors = 0;
 
                     if (data.error) {
+                        console.error('Server returned error:', data.error);
                         addMessage(`> 📜 **Royal Notice**: ${data.error}`, false);
                         break;
                     }
 
                     if (data.response) {
+                        console.log('Received bot response');
                         addMessage(data.response, false);
                         break;
                     }
@@ -1208,15 +1360,25 @@
                     // Still processing, wait and try again
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     attempts++;
+                    
                 } catch (error) {
                     console.error('Polling error:', error);
-                    addMessage('> 📜 **Communication Error**: A mystical disturbance has interrupted our connection. Prithee try again.', false);
-                    break;
+                    consecutiveErrors++;
+                    
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                        addMessage('> 📜 **Connection Error**: Multiple connection failures while waiting for response. Please try sending your message again.', false);
+                        break;
+                    }
+                    
+                    // Wait a bit longer after an error before retrying
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    attempts++;
                 }
             }
 
-            if (attempts >= maxAttempts) {
-                addMessage('> ⌛ **Time Exceeded**: The royal scribe requires more time. Prithee try again.', false);
+            if (attempts >= maxAttempts && consecutiveErrors < maxConsecutiveErrors) {
+                console.log('Polling timed out after maximum attempts');
+                addMessage('> ⌛ **Response Timeout**: The royal scribe is taking longer than expected. Your message may still be processing. Please try again if you don\'t receive a response soon.', false);
             }
         }
 
@@ -1226,6 +1388,53 @@
                 e.preventDefault();
                 sendMessage();
             }
+        });
+
+        // Add connection status indicator
+        function showConnectionStatus(status, message) {
+            // Remove existing status if any
+            const existingStatus = document.querySelector('.connection-status');
+            if (existingStatus) {
+                existingStatus.remove();
+            }
+
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `connection-status ${status}`;
+            statusDiv.innerHTML = `
+                <span class="status-icon">${status === 'error' ? '⚠️' : status === 'success' ? '✅' : 'ℹ️'}</span>
+                <span class="status-message">${message}</span>
+            `;
+            
+            const inputContainer = document.getElementById('input-container');
+            inputContainer.insertBefore(statusDiv, inputContainer.firstChild);
+            
+            // Auto-remove after 5 seconds for success/info, keep error until next action
+            if (status !== 'error') {
+                setTimeout(() => {
+                    if (statusDiv.parentNode) {
+                        statusDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        // Add retry function for failed messages
+        window.retryLastMessage = function() {
+            const lastUserMessage = document.querySelector('.user-message:last-of-type');
+            if (lastUserMessage) {
+                const messageText = lastUserMessage.textContent.replace(/\s*\d{1,2}:\d{2}:\d{2}\s*(AM|PM)?\s*$/, '').trim();
+                document.getElementById('user-input').value = messageText;
+                sendMessage();
+            }
+        };
+
+        // Monitor network connectivity
+        window.addEventListener('online', () => {
+            showConnectionStatus('success', 'Connection restored');
+        });
+
+        window.addEventListener('offline', () => {
+            showConnectionStatus('error', 'No internet connection detected');
         });
 
         // Message Actions
