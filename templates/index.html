@@ -584,6 +584,54 @@
             transform: translate(-50%, -50%) scale(0.8);
         }
 
+        /* Mobile Responsive for Welcome Message */
+        @media (max-width: 768px) {
+            .welcome-message {
+                font-size: 2em;
+                padding: 0 20px;
+                text-align: center;
+                word-wrap: break-word;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-message {
+                font-size: 1.6em;
+                padding: 0 15px;
+                line-height: 1.2;
+                max-width: 90%;
+                word-wrap: break-word;
+            }
+            
+            @keyframes welcomeGlow {
+                0% {
+                    text-shadow: 
+                        0 0 8px #ffd700,
+                        0 0 16px #ffd700,
+                        0 0 24px #ffd700,
+                        0 0 32px #ffd700;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                100% {
+                    text-shadow: 
+                        0 0 16px #ffd700,
+                        0 0 24px #ffd700,
+                        0 0 32px #ffd700,
+                        0 0 40px #ffd700,
+                        0 0 48px #ffd700;
+                    transform: translate(-50%, -50%) scale(1.03);
+                }
+            }
+        }
+
+        @media (max-width: 320px) {
+            .welcome-message {
+                font-size: 1.4em;
+                padding: 0 10px;
+                max-width: 95%;
+            }
+        }
+
 
 
         /* Enhanced Message Actions */
