@@ -655,7 +655,7 @@
             position: absolute;
             top: 50%;
             left: 0;
-            transform: translateY(-50%) translateX(-100%);
+            transform: translateY(-50%) translateX(-90%);
             width: 320px;
             background: rgba(44, 44, 44, 0.95);
             backdrop-filter: blur(20px);
@@ -670,32 +670,6 @@
         .sidebar-container:hover .personality-selector,
         .personality-selector:hover {
             transform: translateY(-50%) translateX(0);
-        }
-
-        .sidebar-indicator {
-            position: absolute;
-            top: 50%;
-            right: -15px;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 60px;
-            background: linear-gradient(135deg, #deb887, #f4e4c1);
-            border-radius: 0 15px 15px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-indicator::before {
-            content: '👑';
-            font-size: 18px;
-            animation: pulse 2s infinite;
-        }
-
-        .sidebar-container:hover .sidebar-indicator {
-            transform: translateY(-50%) scale(1.1);
         }
 
         .personality-selector h3 {
@@ -847,10 +821,6 @@
                 padding: 20px 15px;
             }
 
-            .sidebar-indicator {
-                display: none;
-            }
-
             .chat-wrapper {
                 margin-top: 10px;
                 height: calc(100vh - 120px);
@@ -968,7 +938,6 @@
                     <div class="personality-desc">Witty court entertainer</div>
                 </div>
             </div>
-            <div class="sidebar-indicator"></div>
         </div>
     </div>
     <div class="chat-wrapper">
