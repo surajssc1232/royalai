@@ -10,11 +10,18 @@ import threading
 import time
 import uuid
 from queue import Queue
+from concurrent.futures import ThreadPoolExecutor
+import functools
 
+# Load environment variables first
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))  # Use environment variable for secret key
 app.permanent_session_lifetime = timedelta(days=7)  # Set session to last for 7 days
+
+# Create a thread pool for better performance
+thread_pool = ThreadPoolExecutor(max_workers=3)  # Reduced for faster response times
 
 # Royal Personalities Configuration
 ROYAL_PERSONALITIES = {
@@ -148,8 +155,49 @@ IMPORTANT RULES:
     }
 }
 
-# Store pending responses
+# Store pending responses and add simple cache
 response_queue = {}
+response_cache = {}  # Simple LRU-style cache
+
+# Pre-compile regex patterns for better performance
+REGEX_PATTERNS = {
+    'excessive_newlines': re.compile(r'\n{3,}'),
+    'space_before_punct': re.compile(r'\s+([,.!?;:])'),
+    'space_after_punct': re.compile(r'([,.!?;:])(?=[A-Za-z])'),
+    'multiple_spaces': re.compile(r'\s+'),
+    'code_block_start': re.compile(r'^```(\w*)'),
+    'code_block_end': re.compile(r'^```$')
+}
+
+# Cache responses to improve performance for similar queries
+@functools.lru_cache(maxsize=100)
+def get_cached_system_prompt(personality_title, personality_emoji, personality_prompt):
+    """Cache system prompts to avoid regenerating them"""
+    return f"""You are {personality_title}, a royal court member. Follow these formatting rules EXACTLY:
+
+RESPONSE STRUCTURE:
+1. Start with: ### {personality_title} Speaks {personality_emoji}
+2. Add a royal quote: *"Your quote here"*
+3. Main content with proper markdown:
+   - Use **bold** for important terms, titles, and declarations
+   - Use *italic* for emphasis, poetic phrases, and special terms
+   - Use `inline code` for technical terminology only
+   - Use ***bold italic*** for powerful proclamations
+   - Use bullet points (-) for listing concepts
+   - Leave blank lines between sections for readability
+4. End with: *{personality_title} of the Royal Court* {personality_emoji}
+
+CODE FORMATTING (only when explicitly requested):
+- Use proper markdown code blocks with language specification
+- Add explanatory comments within code
+- Format as: ```language
+- Provide complete, working examples
+- Explain code purpose before showing it
+
+CONTENT GUIDELINES:
+{personality_prompt}
+
+CRITICAL: Maintain royal character while ensuring proper markdown formatting. Every response must follow the exact structure above."""
 
 @app.before_request
 def make_session_permanent():
@@ -243,12 +291,18 @@ def send_message():
         # Get the current personality before starting the background task
         current_personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
 
+        # Check cache first for instant responses
+        cache_key = f"{current_personality['title']}:{hash(message)}"
+        if cache_key in response_cache:
+            cached_response = response_cache[cache_key]
+            return jsonify({'response': cached_response})
+
         # Generate a unique ID for this request
         request_id = str(uuid.uuid4())
         response_queue[request_id] = Queue()
 
-        # Start background task with the current personality
-        threading.Thread(target=generate_response, args=(message, request_id, current_personality)).start()
+        # Start background task with the current personality using thread pool
+        thread_pool.submit(generate_response, message, request_id, current_personality)
 
         # Return immediately with the request ID
         return jsonify({'request_id': request_id, 'status': 'processing'})
@@ -261,34 +315,22 @@ def send_message():
 
 def generate_response(message, request_id, personality):
     try:
-        system_prompt = f"""You are {personality['title']}, a royal court member. Follow these formatting rules EXACTLY:
-
-RESPONSE STRUCTURE:
-1. Start with: ### {personality['title']} Speaks {personality['emoji']}
-2. Add a royal quote: *"Your quote here"*
-3. Main content with proper markdown:
-   - Use **bold** for important terms, titles, and declarations
-   - Use *italic* for emphasis, poetic phrases, and special terms
-   - Use `inline code` for technical terminology only
-   - Use ***bold italic*** for powerful proclamations
-   - Use bullet points (-) for listing concepts
-   - Leave blank lines between sections for readability
-4. End with: *{personality['title']} of the Royal Court* {personality['emoji']}
-
-CODE FORMATTING (only when explicitly requested):
-- Use proper markdown code blocks with language specification
-- Add explanatory comments within code
-- Format as: ```language
-- Provide complete, working examples
-- Explain code purpose before showing it
-
-CONTENT GUIDELINES:
-{personality['prompt']}
-
-CRITICAL: Maintain royal character while ensuring proper markdown formatting. Every response must follow the exact structure above."""
+        # Check cache first for exact matches
+        cache_key = f"{personality['title']}:{hash(message)}"
+        if cache_key in response_cache:
+            cached_response = response_cache[cache_key]
+            response_queue[request_id].put(({'response': cached_response}, None))
+            return
+        
+        # Use cached system prompt for better performance
+        system_prompt = get_cached_system_prompt(
+            personality['title'], 
+            personality['emoji'], 
+            personality['prompt']
+        )
 
         response = mistral_client.chat.complete(
-            model="mistral-large-latest",
+            model="mistral-small",  # Faster than medium model
             messages=[
                 {
                     "role": "system",
@@ -299,15 +341,21 @@ CRITICAL: Maintain royal character while ensuring proper markdown formatting. Ev
                     "content": message
                 }
             ],
-            max_tokens=800,
+            max_tokens=400,  # Further reduced tokens for faster response
             temperature=0.7
         )
 
         if response and response.choices and len(response.choices) > 0:
-            response_text = format_response(response.choices[0].message.content.strip(), personality)
+            response_text = format_response_fast(response.choices[0].message.content.strip(), personality)
+            # Cache the response
+            if len(response_cache) > 50:  # Simple LRU implementation
+                # Remove oldest entry
+                oldest_key = next(iter(response_cache))
+                del response_cache[oldest_key]
+            response_cache[cache_key] = response_text
             response_queue[request_id].put(({'response': response_text}, None))
         else:
-            error_response = format_response("", personality)  # This will create a default "silent court" message
+            error_response = format_response_fast("", personality)  # This will create a default "silent court" message
             response_queue[request_id].put(({'response': error_response}, None))
 
     except Exception as e:
@@ -315,30 +363,31 @@ CRITICAL: Maintain royal character while ensuring proper markdown formatting. Ev
         error_message = f"### Royal Apology {personality['emoji']}\n\n*\"The royal messenger encountered difficulties\"*\n\nPrithee, try thy request again, noble visitor.\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
         response_queue[request_id].put(({'response': error_message}, None))
 
-def format_response(response_text, personality):
-    """Format the response text with proper markdown and royal styling"""
+def format_response_fast(response_text, personality):
+    """Optimized formatting function with pre-compiled regex patterns"""
     if not response_text:
         return f"### {personality['title']} Speaks {personality['emoji']}\n\n*The royal court is temporarily silent*\n\n*{personality['title']} of the Royal Court* {personality['emoji']}\n\n---"
     
-    # Split into lines for processing
+    # Fast path: if response already has proper header, minimal processing
+    if response_text.startswith('###'):
+        # Just clean up excessive newlines and ensure signature
+        text = REGEX_PATTERNS['excessive_newlines'].sub('\n\n', response_text)
+        signature = f"*{personality['title']} of the Royal Court* {personality['emoji']}"
+        if signature not in text and not text.endswith('---'):
+            text = f"{text}\n\n{signature}\n\n---"
+        return text.strip()
+    
+    # Split into lines for processing (avoid regex for line-by-line processing)
     lines = response_text.split('\n')
     formatted_lines = []
     in_code_block = False
-    code_language = None
     
     for line in lines:
-        # Handle code blocks
-        if line.strip().startswith('```'):
-            if in_code_block:
-                # End of code block
-                formatted_lines.append('```')
-                in_code_block = False
-                code_language = None
-            else:
-                # Start of code block
-                in_code_block = True
-                code_language = line.strip()[3:].strip()
-                formatted_lines.append(f'```{code_language}')
+        # Handle code blocks (simplified check)
+        line_stripped = line.strip()
+        if line_stripped.startswith('```'):
+            formatted_lines.append(line_stripped)
+            in_code_block = not in_code_block
             continue
         
         if in_code_block:
@@ -347,57 +396,38 @@ def format_response(response_text, personality):
             continue
         
         # Process non-code lines
-        line = line.strip()
-        if not line:
+        if not line_stripped:
             formatted_lines.append('')
             continue
         
-        # Handle headers
-        if line.startswith('###'):
-            formatted_lines.append('')
-            formatted_lines.append(line)
-            formatted_lines.append('')
-            continue
-        
-        # Handle quotes (starting with *" or just ")
-        if line.startswith('*"') and line.endswith('"*'):
-            formatted_lines.append('')
-            formatted_lines.append(line)
-            formatted_lines.append('')
-            continue
-        elif line.startswith('"') and line.endswith('"'):
-            formatted_lines.append('')
-            formatted_lines.append(f'*"{line[1:-1]}"*')
-            formatted_lines.append('')
-            continue
-        
-        # Handle bullet points
-        if line.startswith('-') or line.startswith('*'):
-            formatted_lines.append(line)
-            continue
-        
-        # Handle bold/italic formatting and clean up punctuation
-        # Fix spacing around punctuation
-        line = re.sub(r'\s+([,.!?;:])', r'\1', line)  # Remove space before punctuation
-        line = re.sub(r'([,.!?;:])(?=[A-Za-z])', r'\1 ', line)  # Add space after punctuation if followed by letter
-        line = re.sub(r'\s+', ' ', line)  # Clean up multiple spaces
-        
-        formatted_lines.append(line)
+        # Handle special formatting (simplified)
+        if line_stripped.startswith('###'):
+            formatted_lines.extend(['', line_stripped, ''])
+        elif (line_stripped.startswith('*"') and line_stripped.endswith('"*')) or \
+             (line_stripped.startswith('"') and line_stripped.endswith('"')):
+            if not line_stripped.startswith('*"'):
+                line_stripped = f'*"{line_stripped[1:-1]}"*'
+            formatted_lines.extend(['', line_stripped, ''])
+        elif line_stripped.startswith(('-', '*', '1.', '2.', '3.', '4.', '5.')):
+            formatted_lines.append(line_stripped)
+        else:
+            # Clean up punctuation spacing using pre-compiled patterns
+            line_cleaned = REGEX_PATTERNS['space_before_punct'].sub(r'\1', line_stripped)
+            line_cleaned = REGEX_PATTERNS['space_after_punct'].sub(r'\1 ', line_cleaned)
+            line_cleaned = REGEX_PATTERNS['multiple_spaces'].sub(' ', line_cleaned)
+            formatted_lines.append(line_cleaned)
     
-    # Join the lines
+    # Join and clean up
     formatted_text = '\n'.join(formatted_lines)
-    
-    # Clean up excessive newlines
-    formatted_text = re.sub(r'\n{3,}', '\n\n', formatted_text)
+    formatted_text = REGEX_PATTERNS['excessive_newlines'].sub('\n\n', formatted_text)
     formatted_text = formatted_text.strip()
     
-    # Ensure proper header if missing
+    # Ensure proper header and signature
     if not formatted_text.startswith('###'):
         formatted_text = f"### {personality['title']} Speaks {personality['emoji']}\n\n{formatted_text}"
     
-    # Ensure proper signature if missing
     signature = f"*{personality['title']} of the Royal Court* {personality['emoji']}"
-    if not signature in formatted_text and not formatted_text.endswith('---'):
+    if signature not in formatted_text and not formatted_text.endswith('---'):
         formatted_text = f"{formatted_text}\n\n{signature}\n\n---"
     
     return formatted_text
