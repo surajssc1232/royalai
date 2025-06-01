@@ -202,8 +202,6 @@ CRITICAL: Maintain royal character while ensuring proper markdown formatting. Ev
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-    if not is_authenticated() and request.endpoint not in ['login', 'authenticate', 'static']:
-        return redirect(url_for('login'))
     if 'personality' not in session:
         session['personality'] = 'germaint'  # Default personality
     
@@ -218,60 +216,35 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
-if not ADMIN_PASSWORD:
-    raise ValueError("Admin password not found. Please set ADMIN_PASSWORD in the environment variables.")
-
 # Initialize Mistral client
 mistral_client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
 if not os.getenv('MISTRAL_API_KEY'):
     raise ValueError("Mistral API key not found. Please set MISTRAL_API_KEY in the environment variables.")
 
-def is_authenticated():
-    return session.get('authenticated', False)
-
 @app.route('/')
-def login():
-    if is_authenticated():
-        return redirect(url_for('chat'))
-    return render_template('login.html')
-
-@app.route('/authenticate', methods=['POST'])
-def authenticate():
-    try:
-        data = request.get_json()
-        if data and data.get('password') == ADMIN_PASSWORD:
-            session['authenticated'] = True
-            session.modified = True  # Ensure session is saved
-            return jsonify({'success': True})
-        return jsonify({'success': False})
-    except Exception as e:
-        app.logger.error(f"Authentication error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/chat')
 def chat():
-    if not is_authenticated():
-        return redirect(url_for('login'))
     return render_template('index.html', polling_enabled=True)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
 
 @app.route('/select_personality', methods=['POST'])
 def select_personality():
-    if not is_authenticated():
-        return jsonify({'error': 'Unauthorized'}), 401
-    
     data = request.get_json()
     personality = data.get('personality')
     
+    # Debug logging
+    app.logger.info(f"Personality selection request: {personality}")
+    app.logger.info(f"Current session personality before: {session.get('personality', 'NOT_SET')}")
+    
     if personality not in ROYAL_PERSONALITIES:
+        app.logger.error(f"Invalid personality requested: {personality}")
         return jsonify({'error': 'Invalid personality'}), 400
     
     session['personality'] = personality
+    session.modified = True  # Force session save
+    
+    # Debug logging
+    app.logger.info(f"Session personality after setting: {session.get('personality')}")
+    app.logger.info(f"Selected personality data: {ROYAL_PERSONALITIES[personality]['title']}")
+    
     return jsonify({
         'success': True,
         'personality': ROYAL_PERSONALITIES[personality]
@@ -280,16 +253,20 @@ def select_personality():
 @app.route('/send_message', methods=['POST'])
 @limiter.limit("100 per hour")
 def send_message():
-    if not is_authenticated():
-        return jsonify({'error': 'Unauthorized'}), 401
-        
     try:
         message = request.json.get('message')
         if not message:
             return jsonify({'error': 'No message provided'}), 400
 
+        # Debug logging for session state
+        session_personality = session.get('personality', 'NOT_SET')
+        app.logger.info(f"Send message - Current session personality: {session_personality}")
+        
         # Get the current personality before starting the background task
         current_personality = ROYAL_PERSONALITIES[session.get('personality', 'germaint')]
+        
+        # Debug logging for selected personality
+        app.logger.info(f"Using personality: {current_personality['title']} ({session.get('personality', 'germaint')})")
 
         # Check cache first for instant responses
         cache_key = f"{current_personality['title']}:{hash(message)}"
